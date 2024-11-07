@@ -7,26 +7,28 @@ void tile(Monitor *m) {
   unsigned int i, n, h, mw, my, ty;
   Client *c;
 
-  for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++)
+  for (n = 0, c = getNextTiledWindow(m->clients); c;
+       c = getNextTiledWindow(c->next), n++)
     ;
   if (n == 0)
     return;
 
-  if (n > m->nmaster)
-    mw = m->nmaster ? m->ww * m->mfact : 0;
+  if (n > m->numMasterWindows)
+    mw = m->numMasterWindows ? m->ww * m->masterFactor : 0;
   else
     mw = m->ww;
-  for (i = my = ty = 0, c = nexttiled(m->clients); c;
-       c = nexttiled(c->next), i++)
-    if (i < m->nmaster) {
-      h = (m->wh - my) / (MIN(n, m->nmaster) - i);
-      resize(c, m->wx, m->wy + my, mw - (2 * c->bw), h - (2 * c->bw), 0);
+  for (i = my = ty = 0, c = getNextTiledWindow(m->clients); c;
+       c = getNextTiledWindow(c->next), i++)
+    if (i < m->numMasterWindows) {
+      h = (m->wh - my) / (MIN(n, m->numMasterWindows) - i);
+      resize(c, m->wx, m->wy + my, mw - (2 * c->borderWidth),
+             h - (2 * c->borderWidth), 0);
       if (my + HEIGHT(c) < m->wh)
         my += HEIGHT(c);
     } else {
       h = (m->wh - ty) / (n - i);
-      resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2 * c->bw),
-             h - (2 * c->bw), 0);
+      resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2 * c->borderWidth),
+             h - (2 * c->borderWidth), 0);
       if (ty + HEIGHT(c) < m->wh)
         ty += HEIGHT(c);
     }
@@ -41,8 +43,9 @@ void monocle(Monitor *m) {
       n++;
   if (n > 0) /* override layout symbol */
     snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
-  for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
-    resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+  for (c = getNextTiledWindow(m->clients); c; c = getNextTiledWindow(c->next))
+    resize(c, m->wx, m->wy, m->ww - 2 * c->borderWidth,
+           m->wh - 2 * c->borderWidth, 0);
 }
 
 void dwindle(Monitor *m) {
@@ -50,7 +53,7 @@ void dwindle(Monitor *m) {
   unsigned int n = 0;
 
   // Count visible clients
-  for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
+  for (c = getNextTiledWindow(m->clients); c; c = getNextTiledWindow(c->next))
     n++;
 
   if (n == 0)
@@ -58,8 +61,9 @@ void dwindle(Monitor *m) {
 
   // Single window uses full space
   if (n == 1) {
-    c = nexttiled(m->clients);
-    resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+    c = getNextTiledWindow(m->clients);
+    resize(c, m->wx, m->wy, m->ww - 2 * c->borderWidth,
+           m->wh - 2 * c->borderWidth, 0);
     return;
   }
 
@@ -69,7 +73,7 @@ void dwindle(Monitor *m) {
   int w = m->ww;
   int h = m->wh;
 
-  c = nexttiled(m->clients);
+  c = getNextTiledWindow(m->clients);
   int i = 0;
 
   while (c) {
@@ -77,22 +81,22 @@ void dwindle(Monitor *m) {
     if (i % 2 == 0) {
       // Vertical split
       w = w / 2;
-      resize(c, x, y, w - 2 * c->bw, h - 2 * c->bw, 0);
+      resize(c, x, y, w - 2 * c->borderWidth, h - 2 * c->borderWidth, 0);
       x += w;
     } else {
       // Horizontal split
       h = h / 2;
-      resize(c, x, y, w - 2 * c->bw, h - 2 * c->bw, 0);
+      resize(c, x, y, w - 2 * c->borderWidth, h - 2 * c->borderWidth, 0);
       y += h;
     }
 
-    c = nexttiled(c->next);
+    c = getNextTiledWindow(c->next);
     i++;
   }
 }
 
 int shouldscale(Client *c) {
-  return (c && !c->isfixed && !c->isfloating && !c->isfullscreen);
+  return (c && !c->isFixedSize && !c->isFloating && !c->isFullscreen);
 }
 
 void scaleclient(Client *c, int x, int y, int w, int h, float scale) {
@@ -104,7 +108,8 @@ void scaleclient(Client *c, int x, int y, int w, int h, float scale) {
   int new_x = x + (w - new_w) / 2;
   int new_y = y + (h - new_h) / 2;
 
-  resize(c, new_x, new_y, new_w - 2 * c->bw, new_h - 2 * c->bw, 0);
+  resize(c, new_x, new_y, new_w - 2 * c->borderWidth,
+         new_h - 2 * c->borderWidth, 0);
 }
 
 void dwindlegaps(Monitor *m) {
@@ -112,10 +117,9 @@ void dwindlegaps(Monitor *m) {
   unsigned int n = 0;
   const int gap = 10;        // Gap size between windows
   const int outer_gap = gap; // Gap from screen edges
-  const float scale = 0.98;  // Slightly increased scale to reduce empty space
 
   // Count visible clients
-  for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
+  for (c = getNextTiledWindow(m->clients); c; c = getNextTiledWindow(c->next))
     n++;
 
   if (n == 0)
@@ -129,31 +133,33 @@ void dwindlegaps(Monitor *m) {
 
   // Single window case
   if (n == 1) {
-    c = nexttiled(m->clients);
-    resize(c, x, y, w - (2 * c->bw), h - (2 * c->bw), 0);
+    c = getNextTiledWindow(m->clients);
+    resize(c, x, y, w - (2 * c->borderWidth), h - (2 * c->borderWidth), 0);
     return;
   }
 
-  c = nexttiled(m->clients);
+  c = getNextTiledWindow(m->clients);
   int i = 0;
   int remaining_w = w;
   int remaining_h = h;
 
   while (c && c->next) { // Check for next window to properly calculate splits
-    Client *next = nexttiled(c->next);
+    Client *next = getNextTiledWindow(c->next);
     if (!next)
       break; // Last window uses remaining space
 
     if (i % 2 == 0) {
       // Vertical split
       int new_w = (remaining_w - gap) / 2;
-      resize(c, x, y, new_w - (2 * c->bw), remaining_h - (2 * c->bw), 0);
+      resize(c, x, y, new_w - (2 * c->borderWidth),
+             remaining_h - (2 * c->borderWidth), 0);
       x += new_w + gap;
       remaining_w = remaining_w - new_w - gap;
     } else {
       // Horizontal split
       int new_h = (remaining_h - gap) / 2;
-      resize(c, x, y, remaining_w - (2 * c->bw), new_h - (2 * c->bw), 0);
+      resize(c, x, y, remaining_w - (2 * c->borderWidth),
+             new_h - (2 * c->borderWidth), 0);
       y += new_h + gap;
       remaining_h = remaining_h - new_h - gap;
     }
@@ -164,6 +170,7 @@ void dwindlegaps(Monitor *m) {
 
   // Last window uses remaining space
   if (c) {
-    resize(c, x, y, remaining_w - (2 * c->bw), remaining_h - (2 * c->bw), 0);
+    resize(c, x, y, remaining_w - (2 * c->borderWidth),
+           remaining_h - (2 * c->borderWidth), 0);
   }
 }

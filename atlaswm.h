@@ -9,13 +9,14 @@ typedef struct Client Client;
 
 struct Client {
   char name[256];
-  float mina, maxa;
+  float minAspectRatio, maxAspectRatio;
   int x, y, w, h;
   int oldx, oldy, oldw, oldh;
   int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
-  int bw, oldbw;
+  int borderWidth, oldBorderWidth;
   unsigned int tags;
-  int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
+  int isFixedSize, isFloating, isUrgent, neverFocus, previousState,
+      isFullscreen;
   Client *next;
   Client *snext;
   Monitor *mon;
@@ -29,14 +30,14 @@ typedef struct {
 
 struct Monitor {
   char ltsymbol[16];
-  float mfact;
-  int nmaster;
+  float masterFactor;
+  int numMasterWindows;
   int num;
   int by;             /* bar geometry */
   int mx, my, mw, mh; /* screen size */
   int wx, wy, ww, wh; /* window area  */
-  unsigned int seltags;
-  unsigned int sellt;
+  unsigned int selectedTags;
+  unsigned int selectedLayout;
   unsigned int tagset[2];
   int showbar;
   int topbar;
@@ -45,14 +46,14 @@ struct Monitor {
   Client *stack;
   Monitor *next;
   Window barwin;
-  const Layout *lt[2];
+  const Layout *layouts[2];
 };
 
-#define HEIGHT(X) ((X)->h + 2 * (X)->bw)
-#define WIDTH(X) ((X)->w + 2 * (X)->bw)
-#define ISVISIBLE(C) ((C->tags & C->mon->tagset[C->mon->seltags]))
+#define HEIGHT(X) ((X)->h + 2 * (X)->borderWidth)
+#define WIDTH(X) ((X)->w + 2 * (X)->borderWidth)
+#define ISVISIBLE(C) ((C->tags & C->mon->tagset[C->mon->selectedTags]))
 
-Client *nexttiled(Client *c);
+Client *getNextTiledWindow(Client *c);
 void resize(Client *c, int x, int y, int w, int h, int interact);
 
 void tile(Monitor *m);

@@ -2,12 +2,12 @@
 
 /* appearance */
 #include <X11/X.h>
-static const unsigned int borderpx = 1; /* border pixel of windows */
-static const unsigned int snap = 32;    /* snap pixel */
+static const unsigned int borderpx = 3; /* border pixel of windows */
+static const unsigned int snap = 0;     /* snap pixel */
 static const int showbar = 1;           /* 0 means no bar */
 static const int topbar = 1;            /* 0 means bottom bar */
-static const char *fonts[] = {"monospace:size=10"};
-static const char dmenufont[] = "monospace:size=10";
+static const char *fonts[] = {"Inter:size=12"};
+static const char dmenufont[] = "Inter:size=10";
 static const char col_gray1[] = "#222222";
 static const char col_gray2[] = "#444444";
 static const char col_gray3[] = "#bbbbbb";
@@ -86,7 +86,7 @@ static const Key keys[] = {
     {MODKEY, XK_d, setlayout, {.v = &layouts[3]}},
     {MODKEY | ShiftMask, XK_d, setlayout, {.v = &layouts[4]}},
     {MODKEY, XK_space, setlayout, {0}},
-    {MODKEY | ShiftMask, XK_space, togglefloating, {0}},
+    {MODKEY | ShiftMask, XK_space, toggleWindowFloating, {0}},
     {MODKEY, XK_0, view, {.ui = ~0}},
     {MODKEY | ShiftMask, XK_0, tag, {.ui = ~0}},
     {MODKEY, XK_comma, focusmon, {.i = -1}},
@@ -108,7 +108,7 @@ static const Button buttons[] = {
     {ClkWinTitle, 0, Button2, zoom, {0}},
     {ClkStatusText, 0, Button2, spawn, {.v = termcmd}},
     {ClkClientWin, MODKEY, Button1, movemouse, {0}},
-    {ClkClientWin, MODKEY, Button2, togglefloating, {0}},
+    {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
     {ClkClientWin, MODKEY, Button3, resizemouse, {0}},
     {ClkTagBar, 0, Button1, view, {0}},
     {ClkTagBar, 0, Button3, toggleview, {0}},
