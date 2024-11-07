@@ -1,12 +1,12 @@
 /* See LICENSE file for copyright and license details.
  *
- * dynamic window manager is designed like any other X client as well. It is
+ * AtlasWM is designed like any other X client as well. It is
  * driven through handling X events. In contrast to other X clients, a window
  * manager selects for SubstructureRedirectMask on the root window, to receive
  * events about window (dis-)appearance. Only one X connection at a time is
  * allowed to select for this event mask.
  *
- * The event handlers of atlaswm are organized in an array which is accessed
+ * The event handlers of AtlasWM are organized in an array which is accessed
  * whenever a new event has been fetched. This allows event dispatching
  * in O(1) time.
  *
@@ -57,159 +57,6 @@
 #define MOUSEMASK (BUTTONMASK | PointerMotionMask)
 #define TAGMASK ((1 << LENGTH(tags)) - 1)
 #define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
-
-/* enums */
-enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeSel };                  /* color schemes */
-enum {
-  NetSupported,
-  NetWMName,
-  NetWMState,
-  NetWMCheck,
-  NetWMFullscreen,
-  NetActiveWindow,
-  NetWMWindowType,
-  NetWMWindowTypeDialog,
-  NetClientList,
-  NetLast
-}; /* EWMH atoms */
-enum {
-  WMProtocols,
-  WMDelete,
-  WMState,
-  WMTakeFocus,
-  WMLast
-}; /* default atoms */
-enum {
-  ClkTagBar,
-  ClkLtSymbol,
-  ClkStatusText,
-  ClkWinTitle,
-  ClkClientWin,
-  ClkRootWin,
-  ClkLast
-}; /* clicks */
-
-typedef union {
-  int i;
-  unsigned int ui;
-  float f;
-  const void *v;
-} Arg;
-
-typedef struct {
-  unsigned int click;
-  unsigned int mask;
-  unsigned int button;
-  void (*func)(const Arg *arg);
-  const Arg arg;
-} Button;
-
-typedef struct {
-  unsigned int mod;
-  KeySym keysym;
-  void (*func)(const Arg *);
-  const Arg arg;
-} Key;
-
-typedef struct {
-  const char *class;
-  const char *instance;
-  const char *title;
-  unsigned int tags;
-  int isfloating;
-  int monitor;
-} Rule;
-
-/* function declarations */
-static void applyWindowRules(Client *c);
-static int applyWindowSizeConstraints(Client *c, int *x, int *y, int *w, int *h,
-                                      int interact);
-static void arrange(Monitor *m);
-static void arrangemon(Monitor *m);
-static void attach(Client *c);
-static void attachWindowToStack(Client *c);
-static void handleMouseButtonPress(XEvent *e);
-static void checkotherwm(void);
-static void cleanup(void);
-static void cleanupmon(Monitor *mon);
-static void handleClientMessage(XEvent *e);
-static void configure(Client *c);
-static void configurenotify(XEvent *e);
-static void handleConfigureRequest(XEvent *e);
-static Monitor *createmon(void);
-static void handleWindowDestroy(XEvent *e);
-static void detach(Client *c);
-static void detachWindowFromStack(Client *c);
-static Monitor *dirtomon(int dir);
-static void drawDash(Monitor *m);
-static void drawDashes(void);
-static void handleMouseEnter(XEvent *e);
-static void handleExpose(XEvent *e);
-static void focus(Client *c);
-static void handleFocusIn(XEvent *e);
-static void focusmon(const Arg *arg);
-static void focusstack(const Arg *arg);
-static Atom getatomprop(Client *c, Atom prop);
-static int getrootptr(int *x, int *y);
-static long getstate(Window w);
-static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
-static void registerMouseButtons(Client *c, int focused);
-static void registerKeyboardShortcuts(void);
-static void incnmaster(const Arg *arg);
-static void keypress(XEvent *e);
-static void killclient(const Arg *arg);
-static void manage(Window w, XWindowAttributes *wa);
-static void mappingnotify(XEvent *e);
-static void maprequest(XEvent *e);
-static void handleMouseMotion(XEvent *e);
-static void movemouse(const Arg *arg);
-static void pop(Client *c);
-static void handlePropertyChange(XEvent *e);
-static void quit(const Arg *arg);
-static Monitor *recttomon(int x, int y, int w, int h);
-static void resizeclient(Client *c, int x, int y, int w, int h);
-static void resizemouse(const Arg *arg);
-static void restack(Monitor *m);
-static void run(void);
-static void scan(void);
-static int sendevent(Client *c, Atom proto);
-static void sendmon(Client *c, Monitor *m);
-static void setclientstate(Client *c, long state);
-static void setfocus(Client *c);
-static void setWindowFullscreen(Client *c, int fullscreen);
-static void setlayout(const Arg *arg);
-static void setmfact(const Arg *arg);
-static void setup(void);
-static void setWindowUrgent(Client *c, int urg);
-static void toggleWindowVisibility(Client *c);
-static void spawn(const Arg *arg);
-static void tag(const Arg *arg);
-static void tagmon(const Arg *arg);
-static void togglebar(const Arg *arg);
-static void toggleWindowFloating(const Arg *arg);
-static void toggletag(const Arg *arg);
-static void toggleview(const Arg *arg);
-static void unfocus(Client *c, int setfocus);
-static void unmanage(Client *c, int destroyed);
-static void handleWindowUnmap(XEvent *e);
-static void updateDashPosition(Monitor *m);
-static void updatebars(void);
-static void updateclientlist(void);
-static int updateMonitorGeometry(void);
-static void updatenumlockmask(void);
-static void updateWindowSizeHints(Client *c);
-static void updatestatus(void);
-static void updateWindowTitle(Client *c);
-static void updateWindowTypeProps(Client *c);
-static void updateWindowManagerHints(Client *c);
-static void view(const Arg *arg);
-static Client *findClientFromWindow(Window w);
-static Monitor *findMonitorFromWindow(Window w);
-static int xerror(Display *dpy, XErrorEvent *ee);
-static int xerrordummy(Display *dpy, XErrorEvent *ee);
-static int xerrorstart(Display *dpy, XErrorEvent *ee);
-static void zoom(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
@@ -364,14 +211,14 @@ void arrange(Monitor *m) {
     for (m = monitors; m; m = m->next)
       toggleWindowVisibility(m->stack);
   if (m) {
-    arrangemon(m);
+    arrangeMonitor(m);
     restack(m);
   } else
     for (m = monitors; m; m = m->next)
-      arrangemon(m);
+      arrangeMonitor(m);
 }
 
-void arrangemon(Monitor *m) {
+void arrangeMonitor(Monitor *m) {
   strncpy(m->ltsymbol, m->layouts[m->selectedLayout]->symbol,
           sizeof m->ltsymbol);
   if (m->layouts[m->selectedLayout]->arrange)
@@ -430,7 +277,7 @@ void handleMouseButtonPress(XEvent *e) {
           click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 }
 
-void checkotherwm(void) {
+void checkForOtherWM(void) {
   xerrorxlib = XSetErrorHandler(xerrorstart);
   /* this causes an error if some other window manager is running */
   XSelectInput(dpy, DefaultRootWindow(dpy), SubstructureRedirectMask);
@@ -452,7 +299,7 @@ void cleanup(void) {
       unmanage(m->stack, 0);
   XUngrabKey(dpy, AnyKey, AnyModifier, root);
   while (monitors)
-    cleanupmon(monitors);
+    cleanupMonitor(monitors);
   for (i = 0; i < CurLast; i++)
     drw_cur_free(drw, cursor[i]);
   for (i = 0; i < LENGTH(colors); i++)
@@ -465,7 +312,7 @@ void cleanup(void) {
   XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 }
 
-void cleanupmon(Monitor *mon) {
+void cleanupMonitor(Monitor *mon) {
   Monitor *m;
 
   if (mon == monitors)
@@ -595,7 +442,7 @@ void handleConfigureRequest(XEvent *e) {
   XSync(dpy, False);
 }
 
-Monitor *createmon(void) {
+Monitor *createMonitor(void) {
   Monitor *m;
 
   m = ecalloc(1, sizeof(Monitor));
@@ -640,7 +487,7 @@ void detachWindowFromStack(Client *c) {
   }
 }
 
-Monitor *dirtomon(int dir) {
+Monitor *findMonitorInDirection(int dir) {
   Monitor *m = NULL;
 
   if (dir > 0) {
@@ -774,12 +621,12 @@ void handleFocusIn(XEvent *e) {
     setfocus(selectedMonitor->sel);
 }
 
-void focusmon(const Arg *arg) {
+void focusMonitor(const Arg *arg) {
   Monitor *m;
 
   if (!monitors->next)
     return;
-  if ((m = dirtomon(arg->i)) == selectedMonitor)
+  if ((m = findMonitorInDirection(arg->i)) == selectedMonitor)
     return;
   unfocus(selectedMonitor->sel, 0);
   selectedMonitor = m;
@@ -919,7 +766,7 @@ void registerKeyboardShortcuts(void) {
   }
 }
 
-void incnmaster(const Arg *arg) {
+void incNumMasterWindows(const Arg *arg) {
   selectedMonitor->numMasterWindows =
       MAX(selectedMonitor->numMasterWindows + arg->i, 0);
   arrange(selectedMonitor);
@@ -1051,7 +898,7 @@ void handleMouseMotion(XEvent *e) {
 
   if (ev->window != root)
     return;
-  if ((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
+  if ((m = getMonitorForArea(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
     unfocus(selectedMonitor->sel, 1);
     selectedMonitor = m;
     focus(NULL);
@@ -1114,8 +961,8 @@ void movemouse(const Arg *arg) {
     }
   } while (ev.type != ButtonRelease);
   XUngrabPointer(dpy, CurrentTime);
-  if ((m = recttomon(c->x, c->y, c->w, c->h)) != selectedMonitor) {
-    sendmon(c, m);
+  if ((m = getMonitorForArea(c->x, c->y, c->w, c->h)) != selectedMonitor) {
+    sendWindowToMonitor(c, m);
     selectedMonitor = m;
     focus(NULL);
   }
@@ -1172,7 +1019,7 @@ void handlePropertyChange(XEvent *e) {
 
 void quit(const Arg *arg) { running = 0; }
 
-Monitor *recttomon(int x, int y, int w, int h) {
+Monitor *getMonitorForArea(int x, int y, int w, int h) {
   Monitor *m, *r = selectedMonitor;
   int a, area = 0;
 
@@ -1262,8 +1109,8 @@ void resizemouse(const Arg *arg) {
   XUngrabPointer(dpy, CurrentTime);
   while (XCheckMaskEvent(dpy, EnterWindowMask, &ev))
     ;
-  if ((m = recttomon(c->x, c->y, c->w, c->h)) != selectedMonitor) {
-    sendmon(c, m);
+  if ((m = getMonitorForArea(c->x, c->y, c->w, c->h)) != selectedMonitor) {
+    sendWindowToMonitor(c, m);
     selectedMonitor = m;
     focus(NULL);
   }
@@ -1327,7 +1174,7 @@ void scan(void) {
   }
 }
 
-void sendmon(Client *c, Monitor *m) {
+void sendWindowToMonitor(Client *c, Monitor *m) {
   if (c->mon == m)
     return;
   unfocus(c, 1);
@@ -1424,7 +1271,7 @@ void setlayout(const Arg *arg) {
 }
 
 /* arg > 1.0 will set mfact absolutely */
-void setmfact(const Arg *arg) {
+void setMasterRatio(const Arg *arg) {
   float f;
 
   if (!arg ||
@@ -1571,13 +1418,13 @@ void tag(const Arg *arg) {
   }
 }
 
-void tagmon(const Arg *arg) {
+void directWindowToMonitor(const Arg *arg) {
   if (!selectedMonitor->sel || !monitors->next)
     return;
-  sendmon(selectedMonitor->sel, dirtomon(arg->i));
+  sendWindowToMonitor(selectedMonitor->sel, findMonitorInDirection(arg->i));
 }
 
-void togglebar(const Arg *arg) {
+void toggleDash(const Arg *arg) {
   selectedMonitor->showbar = !selectedMonitor->showbar;
   updateDashPosition(selectedMonitor);
   XMoveResizeWindow(dpy, selectedMonitor->barwin, selectedMonitor->wx,
@@ -1739,9 +1586,9 @@ int updateMonitorGeometry(void) {
       for (m = monitors; m && m->next; m = m->next)
         ;
       if (m)
-        m->next = createmon();
+        m->next = createMonitor();
       else
-        monitors = createmon();
+        monitors = createMonitor();
     }
     for (i = 0, m = monitors; i < nn && m; m = m->next, i++)
       if (i >= n || unique[i].x_org != m->mx || unique[i].y_org != m->my ||
@@ -1768,14 +1615,14 @@ int updateMonitorGeometry(void) {
       }
       if (m == selectedMonitor)
         selectedMonitor = monitors;
-      cleanupmon(m);
+      cleanupMonitor(m);
     }
     free(unique);
   } else
 #endif /* XINERAMA */
   {    /* default monitor setup */
     if (!monitors)
-      monitors = createmon();
+      monitors = createMonitor();
     if (monitors->mw != screenWidth || monitors->mh != screenHeight) {
       dirty = 1;
       monitors->mw = monitors->ww = screenWidth;
@@ -1915,7 +1762,7 @@ Monitor *findMonitorFromWindow(Window w) {
   Monitor *m;
 
   if (w == root && getrootptr(&x, &y))
-    return recttomon(x, y, 1, 1);
+    return getMonitorForArea(x, y, 1, 1);
   for (m = monitors; m; m = m->next)
     if (w == m->barwin)
       return m;
@@ -1974,7 +1821,7 @@ int main(int argc, char *argv[]) {
     fputs("warning: no locale support\n", stderr);
   if (!(dpy = XOpenDisplay(NULL)))
     die("atlaswm: cannot open display");
-  checkotherwm();
+  checkForOtherWM();
   setup();
   scan();
   run();
