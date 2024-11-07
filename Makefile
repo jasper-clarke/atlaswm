@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = atlasrw.c atlaswm.c util.c
+SRC = atlasrw.c atlaswm.c util.c layouts.c
 OBJ = ${SRC:.c=.o}
 
 all: atlaswm
