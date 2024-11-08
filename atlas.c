@@ -1283,6 +1283,56 @@ void setMasterRatio(const Arg *arg) {
   arrange(selectedMonitor);
 }
 
+// Function to run list of programs at startup
+void startupPrograms() {
+  pid_t pid;
+  const char **args;
+  int i;
+
+  if (!exec)
+    return;
+
+  /* iterate through startup programs */
+  for (i = 0; exec[i];) {
+    /* Find the command and its arguments */
+    args = &exec[i];
+
+    /* Count arguments to find next command */
+    while (exec[i])
+      i++;
+    i++; /* Skip the NULL terminator */
+
+    /* Create new process */
+    if ((pid = fork()) == -1) {
+      LOG_ERROR("Failed to fork for '%s': %s", args[0], strerror(errno));
+      continue;
+    }
+
+    /* Child process */
+    if (pid == 0) {
+      /* Close X connection in child */
+      if (dpy)
+        close(ConnectionNumber(dpy));
+
+      /* Create new session */
+      if (setsid() == -1) {
+        LOG_ERROR("setsid failed for '%s': %s", args[0], strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+
+      /* Execute the program with its arguments */
+      execvp(args[0], (char *const *)args);
+
+      /* If we get here, execvp failed */
+      LOG_ERROR("Failed to execute '%s': %s", args[0], strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+
+    /* Parent process */
+    LOG_INFO("Started program: %s (pid: %d)", args[0], pid);
+  }
+}
+
 void setup(void) {
   int i;
   XSetWindowAttributes wa;
@@ -1359,6 +1409,7 @@ void setup(void) {
   XSelectInput(dpy, root, wa.event_mask);
   registerKeyboardShortcuts();
   focus(NULL);
+  startupPrograms();
 }
 
 void setWindowUrgent(Client *c, int urg) {
@@ -1521,7 +1572,7 @@ void updatebars(void) {
   XSetWindowAttributes wa = {.override_redirect = True,
                              .background_pixmap = ParentRelative,
                              .event_mask = ButtonPressMask | ExposureMask};
-  XClassHint ch = {"atlaswm", "dwm"};
+  XClassHint ch = {"atlaswm", "atlaswm"};
   for (m = monitors; m; m = m->next) {
     if (m->barwin)
       continue;

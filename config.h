@@ -47,8 +47,12 @@ static const Layout layouts[] = {
     {"Dwindle", dwindle},         {"Master", tile},
 };
 
+// Array of startup programs
+static const char *exec[] = {"kitty",    NULL,        "picom", NULL,
+                             "nitrogen", "--restore", NULL};
+
 /* key definitions */
-#define MODKEY Mod1Mask
+#define MODKEY Mod4Mask
 #define TAGKEYS(KEY, TAG)                                                      \
   {MODKEY, KEY, view, {.ui = 1 << TAG}},                                       \
       {MODKEY | ControlMask, KEY, toggleview, {.ui = 1 << TAG}},               \
@@ -60,26 +64,16 @@ static const Layout layouts[] = {
     .v = (const char *[]) { "/bin/sh", "-c", cmd, NULL }                       \
   }
 
-// Array of startup programs
-static const char *exec[] = {"kitty",    NULL,        "picom", NULL,
-                             "nitrogen", "--restore", NULL};
-
 /* commands */
 static const char *termcmd[] = {"kitty", NULL};
 
 static const Key keys[] = {
     /* modifier                     key        function        argument */
-    {MODKEY | ShiftMask, XK_Return, spawn, {.v = termcmd}},
+    {MODKEY, XK_e, spawn, {.v = termcmd}},
     {MODKEY, XK_b, toggleDash, {0}},
-    {MODKEY, XK_j, focusstack, {.i = +1}},
-    {MODKEY, XK_k, focusstack, {.i = -1}},
-    {MODKEY, XK_i, incNumMasterWindows, {.i = +1}},
-    {MODKEY, XK_d, incNumMasterWindows, {.i = -1}},
-    {MODKEY, XK_h, setMasterRatio, {.f = -0.05}},
-    {MODKEY, XK_l, setMasterRatio, {.f = +0.05}},
-    {MODKEY, XK_Return, zoom, {0}},
-    {MODKEY, XK_Tab, view, {0}},
-    {MODKEY | ShiftMask, XK_c, killclient, {0}},
+    {MODKEY, XK_Tab, focusstack, {.i = +1}},
+    {MODKEY, XK_q, killclient, {0}},
+
     {MODKEY, XK_t, setlayout, {.v = &layouts[0]}},
     {MODKEY, XK_f, setlayout, {.v = &layouts[1]}},
     {MODKEY, XK_m, setlayout, {.v = &layouts[2]}},
@@ -87,16 +81,20 @@ static const Key keys[] = {
     {MODKEY | ShiftMask, XK_d, setlayout, {.v = &layouts[4]}},
     {MODKEY, XK_space, setlayout, {0}},
     {MODKEY | ShiftMask, XK_space, toggleWindowFloating, {0}},
+
     {MODKEY, XK_0, view, {.ui = ~0}},
     {MODKEY | ShiftMask, XK_0, tag, {.ui = ~0}},
-    {MODKEY, XK_comma, focusMonitor, {.i = -1}},
-    {MODKEY, XK_period, focusMonitor, {.i = +1}},
-    {MODKEY | ShiftMask, XK_comma, directWindowToMonitor, {.i = -1}},
-    {MODKEY | ShiftMask, XK_period, directWindowToMonitor, {.i = +1}},
+
+    {MODKEY, XK_h, focusMonitor, {.i = -1}},
+    {MODKEY, XK_l, focusMonitor, {.i = +1}},
+    {MODKEY | ShiftMask, XK_h, directWindowToMonitor, {.i = -1}},
+    {MODKEY | ShiftMask, XK_l, directWindowToMonitor, {.i = +1}},
+
+    {MODKEY | ShiftMask, XK_q, quit, {0}},
+
     TAGKEYS(XK_1, 0) TAGKEYS(XK_2, 1) TAGKEYS(XK_3, 2) TAGKEYS(XK_4, 3)
         TAGKEYS(XK_5, 4) TAGKEYS(XK_6, 5) TAGKEYS(XK_7, 6) TAGKEYS(XK_8, 7)
-            TAGKEYS(XK_9, 8){MODKEY | ShiftMask, XK_q, quit, {0}},
-};
+            TAGKEYS(XK_9, 8)};
 
 /* button definitions */
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
