@@ -222,6 +222,7 @@ Atom getatomprop(Client *c, Atom prop);
 int getrootptr(int *x, int *y);
 long getstate(Window w);
 int gettextprop(Window w, Atom atom, char *text, unsigned int size);
+Client *getNextTiledWindow(Client *c);
 void registerMouseButtons(Client *c, int focused);
 void registerKeyboardShortcuts(void);
 void incNumMasterWindows(const Arg *arg);
