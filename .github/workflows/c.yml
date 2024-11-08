@@ -28,7 +28,7 @@ jobs:
 
       - name: Check tomlc99 install
         run: |
-          echo '#include <toml.h>' | gcc -o test -xc -ltoml - && echo "tomlc99 installed successfully"
+          echo '#include <toml.h>' | gcc -xc -c -o /dev/null - && echo "tomlc99 installed successfully"
 
       - name: Build AtlasWM
         run: make atlaswm
