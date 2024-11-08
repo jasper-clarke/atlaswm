@@ -41,7 +41,6 @@
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
 
-/* #include "atlasrw.h" */
 #include "atlas.h"
 #include "util.h"
 
