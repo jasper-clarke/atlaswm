@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xorg-dev libx11-dev libxft-dev libxinerama-dev
+          sudo apt-get install -y xorg-dev libx11-dev libxft-dev libxinerama-dev libtomlc99-dev
       - name: make
         run: make atlaswm
       - name: clean
