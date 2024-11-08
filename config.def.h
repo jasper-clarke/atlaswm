@@ -1,8 +1,11 @@
-// Uncomment this to make your LSP happy when editing config.h
-// #include "atlas.h"
+#include "atlas.h"
 
 /* appearance */
 #include <X11/X.h>
+
+#define OUTERGAPS 20
+#define INNERGAPS 10
+
 static const unsigned int borderpx = 3; /* border pixel of windows */
 static const unsigned int snap = 0;     /* snap pixel */
 static const int showbar = 1;           /* 0 means no bar */
@@ -34,10 +37,8 @@ static const Rule rules[] = {
 };
 
 /* layout(s) */
-static const float mfact = 0.55; /* factor of master area size [0.05..0.95] */
-static const int nmaster = 1;    /* number of clients in master area */
-static const int resizehints =
-    1; /* 1 means respect size hints in tiled resizals */
+static const float mfact = 0.5; /* factor of master area size [0.05..0.95] */
+static const int nmaster = 1;   /* number of clients in master area */
 static const int lockfullscreen =
     1; /* 1 will force focus on the fullscreen window */
 
@@ -60,16 +61,10 @@ static const Layout layouts[] = {
   }
 
 /* commands */
-static char dmenumon[2] =
-    "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = {
-    "dmenu_run", "-m",      dmenumon, "-fn",    dmenufont, "-nb",     col_gray1,
-    "-nf",       col_gray3, "-sb",    col_cyan, "-sf",     col_gray4, NULL};
-static const char *termcmd[] = {"xterm", NULL};
+static const char *termcmd[] = {"kitty", NULL};
 
 static const Key keys[] = {
     /* modifier                     key        function        argument */
-    {MODKEY, XK_p, spawn, {.v = dmenucmd}},
     {MODKEY | ShiftMask, XK_Return, spawn, {.v = termcmd}},
     {MODKEY, XK_b, toggleDash, {0}},
     {MODKEY, XK_j, focusstack, {.i = +1}},
@@ -116,4 +111,3 @@ static const Button buttons[] = {
     {ClkTagBar, MODKEY, Button1, tag, {0}},
     {ClkTagBar, MODKEY, Button3, toggletag, {0}},
 };
-;

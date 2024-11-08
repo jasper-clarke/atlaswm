@@ -1,5 +1,4 @@
-/* See LICENSE file for copyright and license details.
- *
+/*
  * AtlasWM is designed like any other X client as well. It is
  * driven through handling X events. In contrast to other X clients, a window
  * manager selects for SubstructureRedirectMask on the root window, to receive
@@ -58,6 +57,7 @@
 #define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
 
 /* variables */
+static const int resizehints = 0; // 1 means tiling layouts break
 static const char broken[] = "BORKED";
 static char stext[256];
 static int screen;
@@ -1392,8 +1392,6 @@ void toggleWindowVisibility(Client *c) {
 void spawn(const Arg *arg) {
   struct sigaction sa;
 
-  if (arg->v == dmenucmd)
-    dmenumon[0] = '0' + selectedMonitor->num;
   if (fork() == 0) {
     if (dpy)
       close(ConnectionNumber(dpy));

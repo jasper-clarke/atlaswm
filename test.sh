@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Start Xephyr
-Xephyr :100 -ac -screen 1280x720 -glamor &
+Xephyr :100 -ac -screen 1280x720 &
 
 # Wait a moment for Xephyr to start
 sleep 1

@@ -1,4 +1,5 @@
 #include "atlas.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xlib.h>
 #include <stdio.h>
@@ -115,8 +116,6 @@ void scaleclient(Client *c, int x, int y, int w, int h, float scale) {
 void dwindlegaps(Monitor *m) {
   Client *c;
   unsigned int n = 0;
-  const int gap = 10;        // Gap size between windows
-  const int outer_gap = gap; // Gap from screen edges
 
   // Count visible clients
   for (c = getNextTiledWindow(m->clients); c; c = getNextTiledWindow(c->next))
@@ -126,10 +125,10 @@ void dwindlegaps(Monitor *m) {
     return;
 
   // Calculate available space considering outer gaps
-  int x = m->wx + outer_gap;
-  int y = m->wy + outer_gap;
-  int w = m->ww - (2 * outer_gap);
-  int h = m->wh - (2 * outer_gap);
+  int x = m->wx + OUTERGAPS;
+  int y = m->wy + OUTERGAPS;
+  int w = m->ww - (2 * OUTERGAPS);
+  int h = m->wh - (2 * OUTERGAPS);
 
   // Single window case
   if (n == 1) {
@@ -150,18 +149,18 @@ void dwindlegaps(Monitor *m) {
 
     if (i % 2 == 0) {
       // Vertical split
-      int new_w = (remaining_w - gap) / 2;
+      int new_w = (remaining_w - INNERGAPS) / 2;
       resize(c, x, y, new_w - (2 * c->borderWidth),
              remaining_h - (2 * c->borderWidth), 0);
-      x += new_w + gap;
-      remaining_w = remaining_w - new_w - gap;
+      x += new_w + INNERGAPS;
+      remaining_w = remaining_w - new_w - INNERGAPS;
     } else {
       // Horizontal split
-      int new_h = (remaining_h - gap) / 2;
+      int new_h = (remaining_h - INNERGAPS) / 2;
       resize(c, x, y, remaining_w - (2 * c->borderWidth),
              new_h - (2 * c->borderWidth), 0);
-      y += new_h + gap;
-      remaining_h = remaining_h - new_h - gap;
+      y += new_h + INNERGAPS;
+      remaining_h = remaining_h - new_h - INNERGAPS;
     }
 
     c = next;

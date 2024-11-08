@@ -59,6 +59,7 @@
           xorg.libXft
           xorg.xinit
           clang
+          wmctrl
         ];
       };
     });
