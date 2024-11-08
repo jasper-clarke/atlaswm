@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = atlasrw.c atlaswm.c util.c layouts.c
+SRC = draw.c atlas.c util.c layouts.c
 OBJ = ${SRC:.c=.o}
 
 all: atlaswm
@@ -25,7 +25,7 @@ clean:
 dist: clean
 	mkdir -p atlaswm-${VERSION}
 	cp -R LICENSE Makefile README config.def.h config.mk\
-		atlaswm.1 drw.h util.h ${SRC} atlaswm.png transient.c atlaswm-${VERSION}
+		atlaswm.1 util.h ${SRC} atlaswm.png transient.c atlaswm-${VERSION}
 	tar -cf atlaswm-${VERSION}.tar atlaswm-${VERSION}
 	gzip atlaswm-${VERSION}.tar
 	rm -rf atlaswm-${VERSION}

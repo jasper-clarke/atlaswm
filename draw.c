@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "atlaswm.h"
+#include "atlas.h"
 #include "util.h"
 
 #define UTF_INVALID 0xFFFD

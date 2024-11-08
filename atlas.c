@@ -42,7 +42,7 @@
 #include <X11/Xft/Xft.h>
 
 /* #include "atlasrw.h" */
-#include "atlaswm.h"
+#include "atlas.h"
 #include "util.h"
 
 /* macros */

@@ -1,4 +1,4 @@
-#include "atlaswm.h"
+#include "atlas.h"
 #include "util.h"
 #include <X11/Xlib.h>
 #include <stdio.h>
