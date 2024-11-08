@@ -58,7 +58,7 @@
 #define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
 
 /* variables */
-static const char broken[] = "broken";
+static const char broken[] = "BORKED";
 static char stext[256];
 static int screen;
 static int screenWidth,
@@ -1306,7 +1306,7 @@ void setup(void) {
   root = RootWindow(dpy, screen);
   drw = drw_create(dpy, screen, root, screenWidth, screenHeight);
   if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
-    die("no fonts could be loaded.");
+    LOG_FATAL("No fonts could be loaded");
   lrpad = drw->fonts->h;
   bh = drw->fonts->h + 2;
   updateMonitorGeometry();
@@ -1405,7 +1405,7 @@ void spawn(const Arg *arg) {
     sigaction(SIGCHLD, &sa, NULL);
 
     execvp(((char **)arg->v)[0], (char **)arg->v);
-    die("atlaswm: execvp '%s' failed:", ((char **)arg->v)[0]);
+    LOG_ERROR("Failed to execute '%s'", ((char **)arg->v)[0]);
   }
 }
 
@@ -1695,7 +1695,7 @@ void updateWindowSizeHints(Client *c) {
 
 void updatestatus(void) {
   if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
-    strcpy(stext, "atlaswm-" VERSION);
+    strcpy(stext, "AtlasWM v" VERSION);
   drawDash(selectedMonitor);
 }
 
@@ -1770,6 +1770,10 @@ Monitor *findMonitorFromWindow(Window w) {
   return selectedMonitor;
 }
 
+//
+/* Error handling */
+//
+
 /* There's no way to check accesses to destroyed windows, thus those cases are
  * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
  * default error handler, which may call exit. */
@@ -1785,8 +1789,8 @@ int xerror(Display *dpy, XErrorEvent *ee) {
       (ee->request_code == X_GrabKey && ee->error_code == BadAccess) ||
       (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
     return 0;
-  fprintf(stderr, "atlaswm: fatal error: request code=%d, error code=%d\n",
-          ee->request_code, ee->error_code);
+  LOG_ERROR("Xerror: request_code=%d, error_code=%d", ee->request_code,
+            ee->error_code);
   return xerrorxlib(dpy, ee); /* may call exit */
 }
 
@@ -1795,7 +1799,7 @@ int xerrordummy(Display *dpy, XErrorEvent *ee) { return 0; }
 /* Startup Error handler to check if another window manager
  * is already running. */
 int xerrorstart(Display *dpy, XErrorEvent *ee) {
-  die("atlaswm: another window manager is already running");
+  LOG_FATAL("Another window manager is already running");
   return -1;
 }
 
@@ -1815,15 +1819,18 @@ int main(int argc, char *argv[]) {
   if (argc == 2 && !strcmp("-v", argv[1]))
     die("atlaswm-" VERSION);
   else if (argc != 1)
-    die("usage: atlaswm [-v]");
+    die("Usage: atlaswm [-v]");
   if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
-    fputs("warning: no locale support\n", stderr);
+    LOG_FATAL("No locale support");
   if (!(dpy = XOpenDisplay(NULL)))
-    die("atlaswm: cannot open display");
+    LOG_FATAL("Failed to open display");
   checkForOtherWM();
+  LOG_INFO("AtlasWM starting");
   setup();
+  LOG_INFO("AtlasWM setup complete");
   scan();
   run();
+  LOG_INFO("AtlasWM is exiting");
   cleanup();
   XCloseDisplay(dpy);
   return EXIT_SUCCESS;
