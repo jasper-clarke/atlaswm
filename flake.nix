@@ -35,6 +35,7 @@
             xorg.xorgproto
             xorg.libXft
             xorg.xinit
+            tomlc99
           ];
 
           buildPhase = ''
@@ -58,6 +59,7 @@
           xorg.libXinerama
           xorg.libXft
           xorg.xinit
+          tomlc99
           clang
           wmctrl
         ];

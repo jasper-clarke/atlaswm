@@ -1,10 +1,13 @@
-#include "atlas.h"
+// #include "atlas.h"
+#include "configurer.h"
+
+static void reload(const Arg *arg) { reload_config(); }
 
 /* appearance */
 #include <X11/X.h>
 
-#define OUTERGAPS 20
-#define INNERGAPS 10
+// #define OUTERGAPS 20
+// #define INNERGAPS 10
 
 static const unsigned int borderpx = 3; /* border pixel of windows */
 static const unsigned int snap = 0;     /* snap pixel */
@@ -91,6 +94,7 @@ static const Key keys[] = {
     {MODKEY | ShiftMask, XK_l, directWindowToMonitor, {.i = +1}},
 
     {MODKEY | ShiftMask, XK_q, quit, {0}},
+    {MODKEY | ShiftMask, XK_r, reload, {0}},
 
     TAGKEYS(XK_1, 0) TAGKEYS(XK_2, 1) TAGKEYS(XK_3, 2) TAGKEYS(XK_4, 3)
         TAGKEYS(XK_5, 4) TAGKEYS(XK_6, 5) TAGKEYS(XK_7, 6) TAGKEYS(XK_8, 7)

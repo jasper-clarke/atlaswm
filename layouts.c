@@ -125,10 +125,10 @@ void dwindlegaps(Monitor *m) {
     return;
 
   // Calculate available space considering outer gaps
-  int x = m->wx + OUTERGAPS;
-  int y = m->wy + OUTERGAPS;
-  int w = m->ww - (2 * OUTERGAPS);
-  int h = m->wh - (2 * OUTERGAPS);
+  int x = m->wx + cfg.outerGaps;
+  int y = m->wy + cfg.outerGaps;
+  int w = m->ww - (2 * cfg.outerGaps);
+  int h = m->wh - (2 * cfg.outerGaps);
 
   // Single window case
   if (n == 1) {
@@ -149,18 +149,18 @@ void dwindlegaps(Monitor *m) {
 
     if (i % 2 == 0) {
       // Vertical split
-      int new_w = (remaining_w - INNERGAPS) / 2;
+      int new_w = (remaining_w - cfg.innerGaps) / 2;
       resize(c, x, y, new_w - (2 * c->borderWidth),
              remaining_h - (2 * c->borderWidth), 0);
-      x += new_w + INNERGAPS;
-      remaining_w = remaining_w - new_w - INNERGAPS;
+      x += new_w + cfg.innerGaps;
+      remaining_w = remaining_w - new_w - cfg.innerGaps;
     } else {
       // Horizontal split
-      int new_h = (remaining_h - INNERGAPS) / 2;
+      int new_h = (remaining_h - cfg.innerGaps) / 2;
       resize(c, x, y, remaining_w - (2 * c->borderWidth),
              new_h - (2 * c->borderWidth), 0);
-      y += new_h + INNERGAPS;
-      remaining_h = remaining_h - new_h - INNERGAPS;
+      y += new_h + cfg.innerGaps;
+      remaining_h = remaining_h - new_h - cfg.innerGaps;
     }
 
     c = next;
