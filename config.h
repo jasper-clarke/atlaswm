@@ -1,5 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 
+// Uncomment this to make your LSP happy when editing config.h
+// #include "atlas.h"
+
 /* appearance */
 #include <X11/X.h>
 static const unsigned int borderpx = 3; /* border pixel of windows */
