@@ -41,6 +41,7 @@
 #include <X11/Xft/Xft.h>
 
 #include "atlas.h"
+#include "ipc.h"
 #include "util.h"
 
 /* macros */
@@ -985,7 +986,22 @@ void handlePropertyChange(XEvent *e) {
   Window trans;
   XPropertyEvent *ev = &e->xproperty;
 
-  if ((ev->window == root) && (ev->atom == XA_WM_NAME))
+  if ((ev->window == root) && (ev->atom == command_atom)) {
+    Atom type;
+    int format;
+    unsigned long nitems, bytes_after;
+    unsigned char *data = NULL;
+
+    if (XGetWindowProperty(dpy, root, command_atom, 0, 1, True, XA_CARDINAL,
+                           &type, &format, &nitems, &bytes_after,
+                           &data) == Success) {
+      if (data) {
+        CommandType cmd = *(CommandType *)data;
+        handle_command(cmd);
+        XFree(data);
+      }
+    }
+  } else if ((ev->window == root) && (ev->atom == XA_WM_NAME))
     updatestatus();
   else if (ev->state == PropertyDelete)
     return; /* ignore */
@@ -1387,6 +1403,7 @@ void setup(void) {
     scheme[i] = drw_scm_create(drw, colors[i], 3);
   /* init bars */
   updatebars();
+  setup_ipc(dpy);
   updatestatus();
   /* supporting window for NetWMCheck */
   wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
@@ -1865,9 +1882,24 @@ void zoom(const Arg *arg) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc == 2 && !strcmp("-v", argv[1]))
-    die("atlaswm-" VERSION);
-  else if (argc != 1)
+  if (argc == 2) {
+    if (!strcmp("-v", argv[1])) {
+      die("atlaswm-" VERSION);
+    } else if (strcmp(argv[1], "reload") == 0) {
+      Display *d = XOpenDisplay(NULL);
+      if (!d) {
+        LOG_ERROR("Cannot open display");
+        return 1;
+      }
+
+      int success = send_command(d, CMD_RELOAD);
+      XCloseDisplay(d);
+      return success ? 0 : 1;
+
+    } else {
+      die("Usage: atlaswm [-v|reload]");
+    }
+  } else if (argc != 1)
     die("Usage: atlaswm [-v]");
   if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
     LOG_FATAL("No locale support");

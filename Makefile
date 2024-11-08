@@ -2,7 +2,7 @@
 
 include config.mk
 
-SRC = draw.c atlas.c util.c layouts.c configurer.c
+SRC = draw.c atlas.c util.c layouts.c configurer.c ipc.c
 OBJ = ${SRC:.c=.o}
 
 all: atlaswm
