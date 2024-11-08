@@ -64,7 +64,7 @@ static char stext[256];
 static int screen;
 static int screenWidth,
     screenHeight; /* X display screen geometry width, height */
-static int bh;    /* bar height */
+int bh;           /* bar height */
 static int lrpad; /* sum of left and right padding for text */
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
@@ -86,10 +86,10 @@ static void (*handler[LASTEvent])(XEvent *) = {
 static Atom wmatom[WMLast], netatom[NetLast];
 static int running = 1;
 static Cur *cursor[CurLast];
-static Clr **scheme;
-static Display *dpy;
+Clr **scheme;
+Display *dpy;
 static Drw *drw;
-static Monitor *monitors, *selectedMonitor;
+Monitor *monitors, *selectedMonitor;
 static Window root, wmcheckwin;
 
 /* configuration, allows nested code to access above variables */
@@ -447,10 +447,10 @@ Monitor *createMonitor(void) {
 
   m = ecalloc(1, sizeof(Monitor));
   m->tagset[0] = m->tagset[1] = 1;
-  m->masterFactor = mfact;
-  m->numMasterWindows = nmaster;
-  m->showbar = showbar;
-  m->topbar = topbar;
+  m->masterFactor = cfg.masterFactor;
+  m->numMasterWindows = cfg.numMasterWindows;
+  m->showbar = cfg.showDash;
+  m->topbar = cfg.topBar;
   m->layouts[0] = &layouts[0];
   m->layouts[1] = &layouts[1 % LENGTH(layouts)];
   strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
@@ -637,7 +637,7 @@ void focusstack(const Arg *arg) {
   Client *c = NULL, *i;
 
   if (!selectedMonitor->sel ||
-      (selectedMonitor->sel->isFullscreen && lockfullscreen))
+      (selectedMonitor->sel->isFullscreen && cfg.lockFullscreen))
     return;
   if (arg->i > 0) {
     for (c = selectedMonitor->sel->next; c && !ISVISIBLE(c); c = c->next)
@@ -841,7 +841,7 @@ void manage(Window w, XWindowAttributes *wa) {
     c->y = c->mon->wy + c->mon->wh - HEIGHT(c);
   c->x = MAX(c->x, c->mon->wx);
   c->y = MAX(c->y, c->mon->wy);
-  c->borderWidth = borderpx;
+  c->borderWidth = cfg.borderWidth;
 
   wc.border_width = c->borderWidth;
   XConfigureWindow(dpy, w, CWBorderWidth, &wc);
@@ -940,19 +940,20 @@ void movemouse(const Arg *arg) {
 
       nx = ocx + (ev.xmotion.x - x);
       ny = ocy + (ev.xmotion.y - y);
-      if (abs(selectedMonitor->wx - nx) < snap)
+      if (abs(selectedMonitor->wx - nx) < cfg.snapDistance)
         nx = selectedMonitor->wx;
       else if (abs((selectedMonitor->wx + selectedMonitor->ww) -
-                   (nx + WIDTH(c))) < snap)
+                   (nx + WIDTH(c))) < cfg.snapDistance)
         nx = selectedMonitor->wx + selectedMonitor->ww - WIDTH(c);
-      if (abs(selectedMonitor->wy - ny) < snap)
+      if (abs(selectedMonitor->wy - ny) < cfg.snapDistance)
         ny = selectedMonitor->wy;
       else if (abs((selectedMonitor->wy + selectedMonitor->wh) -
-                   (ny + HEIGHT(c))) < snap)
+                   (ny + HEIGHT(c))) < cfg.snapDistance)
         ny = selectedMonitor->wy + selectedMonitor->wh - HEIGHT(c);
       if (!c->isFloating &&
           selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange &&
-          (abs(nx - c->x) > snap || abs(ny - c->y) > snap))
+          (abs(nx - c->x) > cfg.snapDistance ||
+           abs(ny - c->y) > cfg.snapDistance))
         toggleWindowFloating(NULL);
       if (!selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange ||
           c->isFloating)
@@ -1110,7 +1111,8 @@ void resizemouse(const Arg *arg) {
         if (!c->isFloating &&
             selectedMonitor->layouts[selectedMonitor->selectedLayout]
                 ->arrange &&
-            (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+            (abs(nw - c->w) > cfg.snapDistance ||
+             abs(nh - c->h) > cfg.snapDistance))
           toggleWindowFloating(NULL);
       }
       if (!selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange ||
@@ -1354,6 +1356,21 @@ void setup(void) {
   XSetWindowAttributes wa;
   Atom utf8string;
   struct sigaction sa;
+
+  // Load configuration
+  char config_path[256];
+  char *home = getenv("HOME");
+  if (home) {
+    snprintf(config_path, sizeof(config_path), "%s/.config/atlaswm/config.toml",
+             home);
+    if (load_config(config_path)) {
+      LOG_INFO("Configuration loaded successfully");
+    } else {
+      LOG_WARN("Failed to load config file, using defaults");
+    }
+  } else {
+    LOG_WARN("Could not get HOME directory, using default configuration");
+  }
 
   /* do not transform children into zombies when they terminate */
   sigemptyset(&sa.sa_mask);

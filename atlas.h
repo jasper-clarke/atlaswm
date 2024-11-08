@@ -289,4 +289,10 @@ void dwindlegaps(Monitor *m);
 int shouldscale(Client *c);
 void scaleclient(Client *c, int x, int y, int w, int h, float scale);
 
+extern Display *dpy;
+extern Monitor *monitors;
+extern Monitor *selectedMonitor;
+extern Clr **scheme;
+extern int bh;
+
 #endif // _ATLASWM_H_endif // _ATLASWM_H_
