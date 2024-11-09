@@ -49,7 +49,6 @@ typedef struct {
 
   // Window
   int focusNewWindows;
-  int focusMasterOnClose;
   int moveCursorWithFocus;
 
   // Keybindings

@@ -141,35 +141,42 @@ void dwindlegaps(Monitor *m) {
   int i = 0;
   int remaining_w = w;
   int remaining_h = h;
+  int current_x = x;
+  int current_y = y;
 
-  while (c && c->next) { // Check for next window to properly calculate splits
+  while (c) {
     Client *next = getNextTiledWindow(c->next);
-    if (!next)
-      break; // Last window uses remaining space
+
+    // Initialize ratios if not set
+    if (c->horizontalRatio <= 0)
+      c->horizontalRatio = 0.5;
+    if (c->verticalRatio <= 0)
+      c->verticalRatio = 0.5;
+
+    if (!next) {
+      // Last window uses remaining space
+      resize(c, current_x, current_y, remaining_w - (2 * c->borderWidth),
+             remaining_h - (2 * c->borderWidth), 0);
+      break;
+    }
 
     if (i % 2 == 0) {
-      // Vertical split
-      int new_w = (remaining_w - cfg.innerGaps) / 2;
-      resize(c, x, y, new_w - (2 * c->borderWidth),
+      // Vertical split using horizontalRatio
+      int new_w = (remaining_w - cfg.innerGaps) * c->horizontalRatio;
+      resize(c, current_x, current_y, new_w - (2 * c->borderWidth),
              remaining_h - (2 * c->borderWidth), 0);
-      x += new_w + cfg.innerGaps;
+      current_x += new_w + cfg.innerGaps;
       remaining_w = remaining_w - new_w - cfg.innerGaps;
     } else {
-      // Horizontal split
-      int new_h = (remaining_h - cfg.innerGaps) / 2;
-      resize(c, x, y, remaining_w - (2 * c->borderWidth),
+      // Horizontal split using verticalRatio
+      int new_h = (remaining_h - cfg.innerGaps) * c->verticalRatio;
+      resize(c, current_x, current_y, remaining_w - (2 * c->borderWidth),
              new_h - (2 * c->borderWidth), 0);
-      y += new_h + cfg.innerGaps;
+      current_y += new_h + cfg.innerGaps;
       remaining_h = remaining_h - new_h - cfg.innerGaps;
     }
 
     c = next;
     i++;
-  }
-
-  // Last window uses remaining space
-  if (c) {
-    resize(c, x, y, remaining_w - (2 * c->borderWidth),
-           remaining_h - (2 * c->borderWidth), 0);
   }
 }

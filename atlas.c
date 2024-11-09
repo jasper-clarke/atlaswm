@@ -56,6 +56,8 @@
 #define MOUSEMASK (BUTTONMASK | PointerMotionMask)
 #define TAGMASK ((1 << LENGTH(tags)) - 1)
 #define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
+#define CLAMP(x, min, max)                                                     \
+  (((x) < (min)) ? (min) : (((x) > (max)) ? (max) : (x)))
 
 /* variables */
 static const int resizehints = 0; // 1 means tiling layouts break
@@ -226,8 +228,21 @@ void arrangeMonitor(Monitor *m) {
 }
 
 void attach(Client *c) {
-  c->next = c->mon->clients;
-  c->mon->clients = c;
+  if (!c->mon->clients) {
+    // If there are no clients, this becomes the first one
+    c->mon->clients = c;
+    c->next = NULL;
+    return;
+  }
+
+  // Find the last client
+  Client *last;
+  for (last = c->mon->clients; last->next; last = last->next)
+    ;
+
+  // Append the new client
+  last->next = c;
+  c->next = NULL;
 }
 
 void attachWindowToStack(Client *c) {
@@ -959,6 +974,8 @@ void manage(Window w, XWindowAttributes *wa) {
   c->w = c->oldw = wa->width;
   c->h = c->oldh = wa->height;
   c->oldBorderWidth = wa->border_width;
+  c->horizontalRatio = 0.5;
+  c->verticalRatio = 0.5;
 
   updateWindowTitle(c);
   if (XGetTransientForHint(dpy, w, &trans) &&
@@ -1229,19 +1246,33 @@ void resizemouse(const Arg *arg) {
   Monitor *m;
   XEvent ev;
   Time lasttime = 0;
+  int isDwindle;
 
   if (!(c = selectedMonitor->sel))
     return;
   if (c->isFullscreen) /* no support resizing fullscreen windows by mouse */
     return;
+
+  isDwindle =
+      (selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange ==
+       dwindlegaps);
+
   restack(selectedMonitor);
   ocx = c->x;
   ocy = c->y;
+
   if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
                    None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
     return;
+
   XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->borderWidth - 1,
                c->h + c->borderWidth - 1);
+
+  int startW = c->w;
+  int startH = c->h;
+  float startHRatio = c->horizontalRatio > 0 ? c->horizontalRatio : 0.5;
+  float startVRatio = c->verticalRatio > 0 ? c->verticalRatio : 0.5;
+
   do {
     XMaskEvent(dpy, MOUSEMASK | ExposureMask | SubstructureRedirectMask, &ev);
     switch (ev.type) {
@@ -1257,28 +1288,41 @@ void resizemouse(const Arg *arg) {
 
       nw = MAX(ev.xmotion.x - ocx - 2 * c->borderWidth + 1, 1);
       nh = MAX(ev.xmotion.y - ocy - 2 * c->borderWidth + 1, 1);
-      if (c->mon->wx + nw >= selectedMonitor->wx &&
-          c->mon->wx + nw <= selectedMonitor->wx + selectedMonitor->ww &&
-          c->mon->wy + nh >= selectedMonitor->wy &&
-          c->mon->wy + nh <= selectedMonitor->wy + selectedMonitor->wh) {
+
+      if (isDwindle) {
+        // Calculate new ratios based on mouse movement
+        float dx = (float)(nw - startW) / startW;
+        float dy = (float)(nh - startH) / startH;
+
+        // Update the ratios (bounded between 0.1 and 0.9)
+        c->horizontalRatio = CLAMP(startHRatio + (dx / 2), 0.1, 0.9);
+        c->verticalRatio = CLAMP(startVRatio + (dy / 2), 0.1, 0.9);
+
+        arrange(selectedMonitor);
+      } else {
+        // Original floating window resize behavior
         if (!c->isFloating &&
             selectedMonitor->layouts[selectedMonitor->selectedLayout]
                 ->arrange &&
             (abs(nw - c->w) > cfg.snapDistance ||
              abs(nh - c->h) > cfg.snapDistance))
           toggleWindowFloating(NULL);
+
+        if (!selectedMonitor->layouts[selectedMonitor->selectedLayout]
+                 ->arrange ||
+            c->isFloating)
+          resize(c, c->x, c->y, nw, nh, 1);
       }
-      if (!selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange ||
-          c->isFloating)
-        resize(c, c->x, c->y, nw, nh, 1);
       break;
     }
   } while (ev.type != ButtonRelease);
+
   XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->borderWidth - 1,
                c->h + c->borderWidth - 1);
   XUngrabPointer(dpy, CurrentTime);
   while (XCheckMaskEvent(dpy, EnterWindowMask, &ev))
     ;
+
   if ((m = getMonitorForArea(c->x, c->y, c->w, c->h)) != selectedMonitor) {
     sendWindowToMonitor(c, m);
     selectedMonitor = m;
@@ -1724,6 +1768,14 @@ void unmanage(Client *c, int destroyed) {
   Monitor *m = c->mon;
   XWindowChanges wc;
 
+  Client *prev = NULL;
+  Client *curr = m->clients;
+  // Find the previous client
+  while (curr && curr != c) {
+    prev = curr;
+    curr = curr->next;
+  }
+
   detach(c);
   detachWindowFromStack(c);
   if (!destroyed) {
@@ -1740,14 +1792,7 @@ void unmanage(Client *c, int destroyed) {
   }
   free(c);
 
-  Client *next = getNextTiledWindow(m->clients);
-  if (next && cfg.focusMasterOnClose) {
-    focus(next);
-    moveCursorToClientCenter(next);
-  } else {
-    focus(NULL);
-  }
-
+  focus(prev);
   updateclientlist();
   arrange(m);
 }

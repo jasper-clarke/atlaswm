@@ -105,6 +105,7 @@ struct Client {
   float minAspectRatio, maxAspectRatio;
   int x, y, w, h;
   int oldx, oldy, oldw, oldh;
+  float horizontalRatio, verticalRatio;
   int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
   int borderWidth, oldBorderWidth;
   unsigned int tags;

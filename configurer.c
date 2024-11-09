@@ -6,18 +6,19 @@
 #include <toml.h>
 
 // Global configuration instance
-Config cfg = {.outerGaps = 20,
-              .innerGaps = 10,
-              .borderWidth = 3,
-              .snapDistance = 0,
-              .masterFactor = 0.5,
-              .numMasterWindows = 1,
-              .lockFullscreen = 1,
-              .showDash = 1,
-              .topBar = 1,
-              .focusNewWindows = 1,
-              .moveCursorWithFocus = 1,
-              .focusMasterOnClose = 1};
+Config cfg = {
+    .outerGaps = 20,
+    .innerGaps = 10,
+    .borderWidth = 3,
+    .snapDistance = 0,
+    .masterFactor = 0.5,
+    .numMasterWindows = 1,
+    .lockFullscreen = 1,
+    .showDash = 1,
+    .topBar = 1,
+    .focusNewWindows = 1,
+    .moveCursorWithFocus = 1,
+};
 
 static const struct {
   const char *name;
@@ -332,12 +333,6 @@ int load_config(const char *config_path) {
         toml_bool_in(layout, "move_cursor_with_focus");
     if (move_cursor_with_focus.ok) {
       cfg.moveCursorWithFocus = move_cursor_with_focus.u.b;
-    }
-
-    toml_datum_t focus_master_on_close =
-        toml_bool_in(layout, "focus_master_on_close");
-    if (focus_master_on_close.ok) {
-      cfg.focusMasterOnClose = focus_master_on_close.u.b;
     }
   }
 
