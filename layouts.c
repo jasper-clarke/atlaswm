@@ -1,5 +1,5 @@
 #include "atlas.h"
-#include "config.h"
+#include "configurer.h"
 #include "util.h"
 #include <X11/Xlib.h>
 #include <stdio.h>
