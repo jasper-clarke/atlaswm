@@ -295,5 +295,7 @@ extern Monitor *monitors;
 extern Monitor *selectedMonitor;
 extern Clr **scheme;
 extern int bh;
+extern Window root;
+extern unsigned int numlockmask;
 
 #endif // _ATLASWM_H_endif // _ATLASWM_H_

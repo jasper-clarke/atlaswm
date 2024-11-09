@@ -19,6 +19,171 @@ Config cfg = {.outerGaps = 20,
               .moveCursorWithFocus = 1,
               .focusMasterOnClose = 1};
 
+static const struct {
+  const char *name;
+  ActionType action;
+} action_map[] = {{"spawn", ACTION_SPAWN},
+                  {"toggledash", ACTION_TOGGLEDASH},
+                  {"reload", ACTION_RELOAD},
+                  {"cyclefocus", ACTION_CYCLEFOCUS},
+                  {"killclient", ACTION_KILLCLIENT},
+                  {"togglefloating", ACTION_TOGGLEFLOATING},
+                  {"focusmonitor", ACTION_FOCUSMONITOR},
+                  {"movetomonitor", ACTION_MOVETOMONITOR},
+                  {"quit", ACTION_QUIT},
+                  {NULL, ACTION_UNKNOWN}};
+
+static const struct {
+  const char *name;
+  unsigned int mask;
+} modifier_map[] = {{"Mod1", Mod1Mask},
+                    {"Mod4", Mod4Mask},
+                    {"Control", ControlMask},
+                    {"Shift", ShiftMask},
+                    {"Alt", Mod1Mask},
+                    {"Super", Mod4Mask},
+                    {NULL, 0}};
+
+ActionType string_to_action(const char *action) {
+  for (int i = 0; action_map[i].name != NULL; i++) {
+    if (strcasecmp(action, action_map[i].name) == 0) {
+      return action_map[i].action;
+    }
+  }
+  return ACTION_UNKNOWN;
+}
+
+unsigned int parse_modifier(const char *mod) {
+  unsigned int mask = 0;
+  char *mod_copy = strdup(mod);
+  char *token = strtok(mod_copy, "+");
+
+  while (token) {
+    for (int i = 0; modifier_map[i].name != NULL; i++) {
+      if (strcasecmp(token, modifier_map[i].name) == 0) {
+        mask |= modifier_map[i].mask;
+        break;
+      }
+    }
+    token = strtok(NULL, "+");
+  }
+
+  free(mod_copy);
+  return mask;
+}
+
+KeySym parse_key(const char *key) {
+  // Convert the last token to a keysym
+  if (strlen(key) == 1) {
+    return XStringToKeysym(key);
+  }
+  return XStringToKeysym(key);
+}
+
+void parse_keybinding(const char *key_str, toml_table_t *binding_table,
+                      Config *cfg) {
+  if (cfg->keybindingCount >= MAX_KEYBINDINGS) {
+    LOG_ERROR("Maximum number of keybindings reached");
+    return;
+  }
+
+  // Parse the key combination
+  char *last_plus = strrchr(key_str, '+');
+  if (!last_plus) {
+    LOG_ERROR("Invalid key binding format: %s", key_str);
+    return;
+  }
+
+  // Split into modifier and key
+  size_t mod_len = last_plus - key_str;
+  char *modifier_str = strndup(key_str, mod_len);
+  const char *key = last_plus + 1;
+  LOG_INFO("Key: %s, Modifier: %s", key, modifier_str);
+
+  // Get the binding properties
+  toml_datum_t action = toml_string_in(binding_table, "action");
+  toml_datum_t value = toml_string_in(binding_table, "value");
+  toml_datum_t desc = toml_string_in(binding_table, "desc");
+
+  if (!action.ok) {
+    LOG_ERROR("Keybinding missing action: %s", key_str);
+    free(modifier_str);
+    return;
+  }
+
+  LOG_INFO("Action: %s", action.u.s);
+
+  // Create the keybinding
+  Keybinding *kb = &cfg->keybindings[cfg->keybindingCount];
+  kb->modifier = parse_modifier(modifier_str);
+  kb->keysym = parse_key(key);
+  kb->action = string_to_action(action.u.s);
+
+  if (value.ok) {
+    strncpy(kb->value, value.u.s, MAX_VALUE_LENGTH - 1);
+    free(value.u.s);
+  } else {
+    kb->value[0] = '\0';
+  }
+
+  if (desc.ok) {
+    strncpy(kb->description, desc.u.s, MAX_VALUE_LENGTH - 1);
+    free(desc.u.s);
+  } else {
+    kb->description[0] = '\0';
+  }
+
+  free(modifier_str);
+  free(action.u.s);
+  cfg->keybindingCount++;
+
+  LOG_INFO("Added keybinding: %s -> %s", key_str, kb->description);
+}
+
+void load_keybindings(toml_table_t *conf, Config *cfg) {
+  toml_table_t *keybindings = toml_table_in(conf, "keybindings");
+  if (!keybindings) {
+    LOG_INFO("No keybindings configuration found");
+    return;
+  }
+
+  cfg->keybindingCount = 0;
+
+  // Get number of entries in the keybindings table
+  int keycount = toml_table_nkval(keybindings) + toml_table_ntab(keybindings);
+
+  for (int i = 0; i < keycount; i++) {
+    const char *key = toml_key_in(keybindings, i);
+    if (!key)
+      continue;
+
+    toml_table_t *binding = toml_table_in(keybindings, key);
+    if (binding) {
+      parse_keybinding(key, binding, cfg);
+    }
+  }
+}
+
+// Add this to update_window_manager_state()
+void update_keybindings(void) {
+  // Clear existing keybindings
+  XUngrabKey(dpy, AnyKey, AnyModifier, root);
+
+  // Register new keybindings
+  updatenumlockmask();
+  unsigned int modifiers[] = {0, LockMask, numlockmask, numlockmask | LockMask};
+
+  for (int i = 0; i < cfg.keybindingCount; i++) {
+    KeyCode code = XKeysymToKeycode(dpy, cfg.keybindings[i].keysym);
+    if (code) {
+      for (size_t j = 0; j < LENGTH(modifiers); j++) {
+        XGrabKey(dpy, code, cfg.keybindings[i].modifier | modifiers[j], root,
+                 True, GrabModeAsync, GrabModeAsync);
+      }
+    }
+  }
+}
+
 void update_window_manager_state(void) {
   Monitor *m;
   Client *c;
@@ -62,6 +227,9 @@ void update_window_manager_state(void) {
 
   // Rearrange all monitors to apply gap changes and new layouts
   arrange(NULL);
+
+  // Update keybindings
+  update_keybindings();
 
   // Sync changes
   XSync(dpy, False);
@@ -172,6 +340,9 @@ int load_config(const char *config_path) {
       cfg.focusMasterOnClose = focus_master_on_close.u.b;
     }
   }
+
+  // Load keybindings
+  load_keybindings(conf, &cfg);
 
   toml_free(conf);
   return 1;

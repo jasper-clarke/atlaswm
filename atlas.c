@@ -67,7 +67,7 @@ static int screenWidth,
 int bh;           /* bar height */
 static int lrpad; /* sum of left and right padding for text */
 static int (*xerrorxlib)(Display *, XErrorEvent *);
-static unsigned int numlockmask = 0;
+unsigned int numlockmask = 0;
 static void (*handler[LASTEvent])(XEvent *) = {
     [ButtonPress] = handleMouseButtonPress,
     [ClientMessage] = handleClientMessage,
@@ -90,7 +90,7 @@ Clr **scheme;
 Display *dpy;
 static Drw *drw;
 Monitor *monitors, *selectedMonitor;
-static Window root, wmcheckwin;
+Window root, wmcheckwin;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -785,18 +785,151 @@ static int isuniquegeom(XineramaScreenInfo *unique, size_t n,
 }
 #endif /* XINERAMA */
 
-void keypress(XEvent *e) {
-  unsigned int i;
-  KeySym keysym;
-  XKeyEvent *ev;
+char **parse_command_string(const char *cmd) {
+  if (!cmd)
+    return NULL;
 
-  ev = &e->xkey;
-  // TODO: Deprecated
-  keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-  for (i = 0; i < LENGTH(keys); i++)
-    if (keysym == keys[i].keysym &&
-        CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].func)
-      keys[i].func(&(keys[i].arg));
+  // Count the number of arguments needed
+  int count = 1; // Start with 1 for the first arg
+  const char *tmp = cmd;
+  while (*tmp) {
+    if (*tmp == ' ')
+      count++;
+    tmp++;
+  }
+
+  // Allocate array of string pointers (plus one for NULL terminator)
+  char **argv = calloc(count + 1, sizeof(char *));
+  if (!argv)
+    return NULL;
+
+  // Make a copy of cmd that we can modify
+  char *cmd_copy = strdup(cmd);
+  if (!cmd_copy) {
+    free(argv);
+    return NULL;
+  }
+
+  // Parse the arguments
+  int i = 0;
+  char *token = strtok(cmd_copy, " ");
+  while (token && i < count) {
+    argv[i] = strdup(token);
+    token = strtok(NULL, " ");
+    i++;
+  }
+  argv[i] = NULL; // NULL terminate the array
+
+  free(cmd_copy);
+  return argv;
+}
+
+// Helper function to free the argument array
+void free_command_args(char **argv) {
+  if (!argv)
+    return;
+  for (int i = 0; argv[i] != NULL; i++) {
+    free(argv[i]);
+  }
+  free(argv);
+}
+
+// Update the spawn case in execute_keybinding
+void execute_keybinding(Keybinding *kb) {
+  Arg arg = {0};
+  Arg direction = {0};
+
+  switch (kb->action) {
+  case ACTION_SPAWN:
+    if (kb->value[0]) {
+      char **argv = parse_command_string(kb->value);
+      if (argv) {
+        arg.v = argv;
+        spawn(&arg);
+        free_command_args(argv);
+      } else {
+        LOG_ERROR("Failed to parse command: %s", kb->value);
+      }
+    }
+    break;
+
+  case ACTION_KILLCLIENT:
+    killclient(&arg);
+    break;
+
+  case ACTION_TOGGLEDASH:
+    toggleDash(&arg);
+    break;
+
+  case ACTION_RELOAD:
+    reload(&arg);
+    break;
+
+  case ACTION_CYCLEFOCUS:
+    focusstack(&arg);
+    break;
+
+  case ACTION_FOCUSMONITOR:
+    if (!kb->value[0]) {
+      LOG_ERROR("No direction specified for focusmonitor keybinding");
+      return;
+    }
+    // New empty variable to hold the direction
+    if (strcasecmp(kb->value, "next") == 0) {
+      direction.i = +1;
+    } else if (strcasecmp(kb->value, "prev") == 0) {
+      direction.i = -1;
+    } else {
+      LOG_ERROR("Invalid direction specified for focusmonitor keybinding, ",
+                kb->value);
+    }
+    focusMonitor(&direction);
+    break;
+
+  case ACTION_MOVETOMONITOR:
+    if (!kb->value[0]) {
+      LOG_ERROR("No direction specified for focusmonitor keybinding");
+      return;
+    }
+    // New empty variable to hold the direction
+    if (strcasecmp(kb->value, "next") == 0) {
+      direction.i = +1;
+    } else if (strcasecmp(kb->value, "prev") == 0) {
+      direction.i = -1;
+    } else {
+      LOG_ERROR("Invalid direction specified for focusmonitor keybinding, ",
+                kb->value);
+    }
+    directWindowToMonitor(&direction);
+    break;
+
+  case ACTION_TOGGLEFLOATING:
+    toggleWindowFloating(&arg);
+    break;
+
+  case ACTION_QUIT:
+    quit(&arg);
+    break;
+
+  default:
+    LOG_WARN("Unknown action for keybinding");
+    break;
+  }
+}
+
+// Replace the existing keypress function in atlas.c with this version
+void keypress(XEvent *e) {
+  XKeyEvent *ev = &e->xkey;
+  KeySym keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+  unsigned int cleanMask = CLEANMASK(ev->state);
+
+  for (int i = 0; i < cfg.keybindingCount; i++) {
+    if (cfg.keybindings[i].keysym == keysym &&
+        CLEANMASK(cfg.keybindings[i].modifier) == cleanMask) {
+      execute_keybinding(&cfg.keybindings[i]);
+      return;
+    }
+  }
 }
 
 void killclient(const Arg *arg) {

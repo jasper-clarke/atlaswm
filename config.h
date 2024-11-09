@@ -59,6 +59,8 @@ static const char *exec[] = {"kitty",    NULL,        "picom", NULL,
 
 /* commands */
 static const char *termcmd[] = {"kitty", NULL};
+static const char *roficmd[] = {
+    "rofi", "-show", "drun", "-theme", "~/.config/rofi/launcher.rasi", NULL};
 
 static const Key keys[] = {
     /* modifier                     key        function        argument */
@@ -68,10 +70,7 @@ static const Key keys[] = {
     {MODKEY, XK_q, killclient, {0}},
 
     {MODKEY, XK_t, setlayout, {.v = &layouts[0]}},
-    {MODKEY,
-     XK_space,
-     spawn,
-     {.v = "rofi -show drun -theme ~/.config/rofi/launcher.rasi"}},
+    {MODKEY, XK_space, spawn, {.v = roficmd}},
     {MODKEY, XK_f, toggleWindowFloating, {0}},
 
     {MODKEY, XK_0, view, {.ui = ~0}},
