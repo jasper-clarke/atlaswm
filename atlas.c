@@ -1290,15 +1290,20 @@ void resizemouse(const Arg *arg) {
       nh = MAX(ev.xmotion.y - ocy - 2 * c->borderWidth + 1, 1);
 
       if (isDwindle) {
-        // Calculate new ratios based on mouse movement
-        float dx = (float)(nw - startW) / startW;
-        float dy = (float)(nh - startH) / startH;
+        if (c->isFloating) {
+          resize(c, c->x, c->y, nw, nh, 1);
+        } else {
 
-        // Update the ratios (bounded between 0.1 and 0.9)
-        c->horizontalRatio = CLAMP(startHRatio + (dx / 2), 0.1, 0.9);
-        c->verticalRatio = CLAMP(startVRatio + (dy / 2), 0.1, 0.9);
+          // Calculate new ratios based on mouse movement
+          float dx = (float)(nw - startW) / startW;
+          float dy = (float)(nh - startH) / startH;
 
-        arrange(selectedMonitor);
+          // Update the ratios (bounded between 0.1 and 0.9)
+          c->horizontalRatio = CLAMP(startHRatio + (dx / 2), 0.1, 0.9);
+          c->verticalRatio = CLAMP(startVRatio + (dy / 2), 0.1, 0.9);
+
+          arrange(selectedMonitor);
+        }
       } else {
         // Original floating window resize behavior
         if (!c->isFloating &&
