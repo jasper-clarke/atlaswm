@@ -14,7 +14,10 @@ Config cfg = {.outerGaps = 20,
               .numMasterWindows = 1,
               .lockFullscreen = 1,
               .showDash = 1,
-              .topBar = 1};
+              .topBar = 1,
+              .focusNewWindows = 1,
+              .moveCursorWithFocus = 1,
+              .focusMasterOnClose = 1};
 
 void update_window_manager_state(void) {
   Monitor *m;
@@ -146,6 +149,27 @@ int load_config(const char *config_path) {
     toml_datum_t master_count = toml_int_in(layout, "master_count");
     if (master_count.ok) {
       cfg.numMasterWindows = master_count.u.i;
+    }
+  }
+
+  // window configuration
+  toml_table_t *windows = toml_table_in(conf, "windows");
+  if (layout) {
+    toml_datum_t focus_new_windows = toml_bool_in(layout, "focus_new_windows");
+    if (focus_new_windows.ok) {
+      cfg.focusNewWindows = focus_new_windows.u.b;
+    }
+
+    toml_datum_t move_cursor_with_focus =
+        toml_bool_in(layout, "move_cursor_with_focus");
+    if (move_cursor_with_focus.ok) {
+      cfg.moveCursorWithFocus = move_cursor_with_focus.u.b;
+    }
+
+    toml_datum_t focus_master_on_close =
+        toml_bool_in(layout, "focus_master_on_close");
+    if (focus_master_on_close.ok) {
+      cfg.focusMasterOnClose = focus_master_on_close.u.b;
     }
   }
 

@@ -631,6 +631,7 @@ void focusMonitor(const Arg *arg) {
   unfocus(selectedMonitor->sel, 0);
   selectedMonitor = m;
   focus(NULL);
+  moveCursorToClientCenter(selectedMonitor->sel);
 }
 
 void focusstack(const Arg *arg) {
@@ -656,6 +657,7 @@ void focusstack(const Arg *arg) {
   }
   if (c) {
     focus(c);
+    moveCursorToClientCenter(c);
     restack(selectedMonitor);
   }
 }
@@ -870,7 +872,12 @@ void manage(Window w, XWindowAttributes *wa) {
   c->mon->sel = c;
   arrange(c->mon);
   XMapWindow(dpy, c->win);
-  focus(NULL);
+  if (cfg.focusNewWindows) {
+    focus(c);
+    moveCursorToClientCenter(c);
+  } else {
+    focus(NULL);
+  }
 }
 
 void mappingnotify(XEvent *e) {
@@ -1031,6 +1038,19 @@ void handlePropertyChange(XEvent *e) {
     if (ev->atom == netatom[NetWMWindowType])
       updateWindowTypeProps(c);
   }
+}
+
+void moveCursorToClientCenter(Client *c) {
+  if (!c || !cfg.moveCursorWithFocus)
+    return;
+
+  // Calculate center coordinates of the window
+  int x = c->x + (c->w / 2);
+  int y = c->y + (c->h / 2);
+
+  // Move cursor to window center
+  XWarpPointer(dpy, None, root, 0, 0, 0, 0, x, y);
+  XFlush(dpy);
 }
 
 void quit(const Arg *arg) { running = 0; }
@@ -1504,6 +1524,8 @@ void directWindowToMonitor(const Arg *arg) {
   if (!selectedMonitor->sel || !monitors->next)
     return;
   sendWindowToMonitor(selectedMonitor->sel, findMonitorInDirection(arg->i));
+  focusMonitor(arg);
+  moveCursorToClientCenter(selectedMonitor->sel);
 }
 
 void toggleDash(const Arg *arg) {
@@ -1584,7 +1606,15 @@ void unmanage(Client *c, int destroyed) {
     XUngrabServer(dpy);
   }
   free(c);
-  focus(NULL);
+
+  Client *next = getNextTiledWindow(m->clients);
+  if (next && cfg.focusMasterOnClose) {
+    focus(next);
+    moveCursorToClientCenter(next);
+  } else {
+    focus(NULL);
+  }
+
   updateclientlist();
   arrange(m);
 }

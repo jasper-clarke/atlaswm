@@ -22,6 +22,11 @@ typedef struct {
   float masterFactor;
   int numMasterWindows;
   int lockFullscreen;
+
+  // Window
+  int focusNewWindows;
+  int focusMasterOnClose;
+  int moveCursorWithFocus;
 } Config;
 
 // Global configuration instance

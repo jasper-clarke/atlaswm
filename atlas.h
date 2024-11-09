@@ -233,6 +233,7 @@ void mappingnotify(XEvent *e);
 void maprequest(XEvent *e);
 void handleMouseMotion(XEvent *e);
 void movemouse(const Arg *arg);
+void moveCursorToClientCenter(Client *c);
 void pop(Client *c);
 void handlePropertyChange(XEvent *e);
 void quit(const Arg *arg);

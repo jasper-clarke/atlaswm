@@ -68,12 +68,11 @@ static const Key keys[] = {
     {MODKEY, XK_q, killclient, {0}},
 
     {MODKEY, XK_t, setlayout, {.v = &layouts[0]}},
-    {MODKEY, XK_f, setlayout, {.v = &layouts[1]}},
-    {MODKEY, XK_m, setlayout, {.v = &layouts[2]}},
-    {MODKEY, XK_d, setlayout, {.v = &layouts[3]}},
-    {MODKEY | ShiftMask, XK_d, setlayout, {.v = &layouts[4]}},
-    {MODKEY, XK_space, setlayout, {0}},
-    {MODKEY | ShiftMask, XK_space, toggleWindowFloating, {0}},
+    {MODKEY,
+     XK_space,
+     spawn,
+     {.v = "rofi -show drun -theme ~/.config/rofi/launcher.rasi"}},
+    {MODKEY, XK_f, toggleWindowFloating, {0}},
 
     {MODKEY, XK_0, view, {.ui = ~0}},
     {MODKEY | ShiftMask, XK_0, tag, {.ui = ~0}},
@@ -84,7 +83,7 @@ static const Key keys[] = {
     {MODKEY | ShiftMask, XK_l, directWindowToMonitor, {.i = +1}},
 
     {MODKEY | ShiftMask, XK_q, quit, {0}},
-    {MODKEY | ShiftMask, XK_r, reload, {0}},
+    {MODKEY, XK_r, reload, {0}},
 
     TAGKEYS(XK_1, 0) TAGKEYS(XK_2, 1) TAGKEYS(XK_3, 2) TAGKEYS(XK_4, 3)
         TAGKEYS(XK_5, 4) TAGKEYS(XK_6, 5) TAGKEYS(XK_7, 6) TAGKEYS(XK_8, 7)
