@@ -30,6 +30,9 @@ typedef struct {
   // Keybindings
   Keybinding keybindings[MAX_KEYBINDINGS];
   int keybindingCount;
+
+  // Performance
+  int refreshRate;
 } Config;
 
 // Global configuration instance

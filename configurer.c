@@ -18,6 +18,7 @@ Config cfg = {
     .topBar = 1,
     .focusNewWindows = 1,
     .moveCursorWithFocus = 1,
+    .refreshRate = 60,
 };
 
 static const struct {
@@ -334,6 +335,15 @@ int load_config(const char *config_path) {
         toml_bool_in(windows, "move_cursor_with_focus");
     if (move_cursor_with_focus.ok) {
       cfg.moveCursorWithFocus = move_cursor_with_focus.u.b;
+    }
+  }
+
+  // Performance
+  toml_table_t *performance = toml_table_in(conf, "performance");
+  if (performance) {
+    toml_datum_t refresh_rate = toml_int_in(performance, "refresh_rate");
+    if (refresh_rate.ok) {
+      cfg.refreshRate = refresh_rate.u.i;
     }
   }
 
