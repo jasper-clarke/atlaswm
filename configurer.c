@@ -371,8 +371,6 @@ void update_window_manager_state(void) {
   // Update keybindings
   update_keybindings();
 
-  free_workspaces();
-
   // Sync changes
   XSync(dpy, False);
 }
