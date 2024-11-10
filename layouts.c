@@ -4,6 +4,63 @@
 #include <X11/Xlib.h>
 #include <stdio.h>
 
+void arrange(Monitor *m) {
+  if (m)
+    toggleWindowVisibility(m->stack);
+  else
+    for (m = monitors; m; m = m->next)
+      toggleWindowVisibility(m->stack);
+  if (m) {
+    arrangeMonitor(m);
+    restack(m);
+  } else
+    for (m = monitors; m; m = m->next)
+      arrangeMonitor(m);
+}
+
+void arrangeMonitor(Monitor *m) {
+  safe_strcpy(m->layoutSymbol, m->layouts[m->selectedLayout]->symbol,
+              sizeof m->layoutSymbol);
+  if (m->layouts[m->selectedLayout]->arrange)
+    m->layouts[m->selectedLayout]->arrange(m);
+}
+
+void setlayout(const Arg *arg) {
+  if (!arg || !arg->v ||
+      arg->v != selectedMonitor->layouts[selectedMonitor->selectedLayout])
+    selectedMonitor->selectedLayout ^= 1;
+  if (arg && arg->v)
+    selectedMonitor->layouts[selectedMonitor->selectedLayout] =
+        (Layout *)arg->v;
+  safe_strcpy(selectedMonitor->layoutSymbol,
+              selectedMonitor->layouts[selectedMonitor->selectedLayout]->symbol,
+              sizeof selectedMonitor->layoutSymbol);
+  if (selectedMonitor->active)
+    arrange(selectedMonitor);
+  else
+    drawDash(selectedMonitor);
+}
+
+/* arg > 1.0 will set mfact absolutely */
+void setMasterRatio(const Arg *arg) {
+  float f;
+
+  if (!arg ||
+      !selectedMonitor->layouts[selectedMonitor->selectedLayout]->arrange)
+    return;
+  f = arg->f < 1.0 ? arg->f + selectedMonitor->masterFactor : arg->f - 1.0;
+  if (f < 0.05 || f > 0.95)
+    return;
+  selectedMonitor->masterFactor = f;
+  arrange(selectedMonitor);
+}
+
+void incNumMasterWindows(const Arg *arg) {
+  selectedMonitor->numMasterWindows =
+      MAX(selectedMonitor->numMasterWindows + arg->i, 0);
+  arrange(selectedMonitor);
+}
+
 void tile(Monitor *m) {
   unsigned int i, n, h, mw, my, ty;
   Client *c;
@@ -43,7 +100,7 @@ void monocle(Monitor *m) {
     if (ISVISIBLE(c))
       n++;
   if (n > 0) /* override layout symbol */
-    snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
+    snprintf(m->layoutSymbol, sizeof m->layoutSymbol, "[%d]", n);
   for (c = getNextTiledWindow(m->clients); c; c = getNextTiledWindow(c->next))
     resize(c, m->wx, m->wy, m->ww - 2 * c->borderWidth,
            m->wh - 2 * c->borderWidth, 0);
@@ -94,23 +151,6 @@ void dwindle(Monitor *m) {
     c = getNextTiledWindow(c->next);
     i++;
   }
-}
-
-int shouldscale(Client *c) {
-  return (c && !c->isFixedSize && !c->isFloating && !c->isFullscreen);
-}
-
-void scaleclient(Client *c, int x, int y, int w, int h, float scale) {
-  if (!shouldscale(c))
-    return;
-
-  int new_w = w * scale;
-  int new_h = h * scale;
-  int new_x = x + (w - new_w) / 2;
-  int new_y = y + (h - new_h) / 2;
-
-  resize(c, new_x, new_y, new_w - 2 * c->borderWidth,
-         new_h - 2 * c->borderWidth, 0);
 }
 
 void dwindlegaps(Monitor *m) {

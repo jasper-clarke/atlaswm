@@ -1,6 +1,4 @@
-// #include "atlas.h"
 #include "configurer.h"
-
 static void reload(const Arg *arg) { reload_config(); }
 
 /* appearance */

@@ -87,6 +87,32 @@ typedef struct {
   const Arg arg;             // Argument to pass
 } Key;
 
+// Keybinding configuration
+
+#define MAX_KEYBINDINGS 100
+#define MAX_VALUE_LENGTH 256
+
+typedef enum {
+  ACTION_SPAWN,
+  ACTION_TOGGLEDASH,
+  ACTION_RELOAD,
+  ACTION_CYCLEFOCUS,
+  ACTION_KILLCLIENT,
+  ACTION_TOGGLEFLOATING,
+  ACTION_FOCUSMONITOR,
+  ACTION_MOVETOMONITOR,
+  ACTION_QUIT,
+  ACTION_UNKNOWN
+} ActionType;
+
+typedef struct {
+  unsigned int modifier;
+  KeySym keysym;
+  ActionType action;
+  char value[MAX_VALUE_LENGTH];
+  char description[MAX_VALUE_LENGTH];
+} Keybinding;
+
 // Window rule configuration
 typedef struct {
   const char *class;    // Window class
@@ -133,20 +159,22 @@ struct Client {
   int x, y, w, h;                       // Current geometry
   int oldx, oldy, oldw, oldh;           // Previous geometry
   float horizontalRatio, verticalRatio; // Position ratios
-  int basew, baseh, incw, inch, maxw, maxh, minw, minh; // Size constraints
-  int hintsvalid;                  // Whether size hints are valid
-  int borderWidth, oldBorderWidth; // Border widths
-  unsigned int tags;               // Tags (virtual desktops)
-  int isFixedSize;                 // Whether size is fixed
-  int isFloating;                  // Whether window is floating
-  int isUrgent;                    // Whether window needs attention
-  int neverFocus;                  // Whether window should never get focus
-  int previousState;               // Previous state
-  int isFullscreen;                // Whether window is fullscreen
-  Client *next;                    // Next client in list
-  Client *snext;                   // Next client in stack
-  Monitor *mon;                    // Monitor containing this client
-  Window win;                      // X11 window ID
+  int basew, baseh;                     // Minimum size
+  int incw, inch;                       // Increment size
+  int maxw, maxh, minw, minh;           // Size constraints
+  int hintsvalid;                       // Whether size hints are valid
+  int borderWidth, oldBorderWidth;      // Border widths
+  unsigned int workspaces;              // Tags (virtual desktops)
+  int isFixedSize;                      // Whether size is fixed
+  int isFloating;                       // Whether window is floating
+  int isUrgent;                         // Whether window needs attention
+  int neverFocus;                       // Whether window should never get focus
+  int previousState;                    // Previous state
+  int isFullscreen;                     // Whether window is fullscreen
+  Client *next;                         // Next client in list
+  Client *nextInStack;                  // Next client in stack
+  Monitor *monitor;                     // Monitor containing this client
+  Window win;                           // X11 window ID
 };
 
 // Layout structure
@@ -157,24 +185,24 @@ typedef struct {
 
 // Monitor structure
 struct Monitor {
-  char ltsymbol[16];           // Current layout symbol
-  float masterFactor;          // Size of master area
-  int numMasterWindows;        // Number of windows in master area
-  int num;                     // Monitor number
-  int by;                      // Bar y position
-  int mx, my, mw, mh;          // Monitor geometry
-  int wx, wy, ww, wh;          // Window area geometry
-  unsigned int selectedTags;   // Current tag selection
-  unsigned int selectedLayout; // Current layout
-  unsigned int tagset[2];      // Tag sets
-  int showbar;                 // Bar visibility
-  int topbar;                  // Bar position
-  Client *clients;             // List of clients
-  Client *sel;                 // Selected client
-  Client *stack;               // Client stack
-  Monitor *next;               // Next monitor
-  Window barwin;               // Bar window
-  const Layout *layouts[2];    // Available layouts
+  char layoutSymbol[16];           // Current layout symbol
+  float masterFactor;              // Size of master area
+  int numMasterWindows;            // Number of windows in master area
+  int num;                         // Monitor number
+  int dashPos;                     // Bar y position
+  int mx, my, mw, mh;              // Monitor geometry
+  int wx, wy, ww, wh;              // Window area geometry
+  unsigned int selectedWorkspaces; // Current workspace selection
+  unsigned int selectedLayout;     // Current layout
+  unsigned int workspaceset[2];    // Workspace sets
+  int showDash;                    // Bar visibility
+  int dashPosTop;                  // Bar position
+  Client *clients;                 // List of clients
+  Client *active;                  // Selected client
+  Client *stack;                   // Client stack
+  Monitor *next;                   // Next monitor
+  Window dashWin;                  // Bar window
+  const Layout *layouts[2];        // Available layouts
 };
 
 /* Drawing Functions */
@@ -216,11 +244,25 @@ void drw_map(Drw *drw, Window win, int x, int y, unsigned int w,
 /* Utility Macros */
 #define HEIGHT(X) ((X)->h + 2 * (X)->borderWidth)
 #define WIDTH(X) ((X)->w + 2 * (X)->borderWidth)
-#define ISVISIBLE(C) ((C->tags & C->mon->tagset[C->mon->selectedTags]))
+#define ISVISIBLE(C)                                                           \
+  ((C->workspaces & C->monitor->workspaceset[C->monitor->selectedWorkspaces]))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define BETWEEN(X, A, B) ((A) <= (X) && (X) <= (B))
 #define LENGTH(X) (sizeof(X) / sizeof(X[0]))
+#define BUTTONMASK (ButtonPressMask | ButtonReleaseMask)
+#define CLEANMASK(mask)                                                        \
+  (mask & ~(numlockmask | LockMask) &                                          \
+   (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask |      \
+    Mod5Mask))
+#define INTERSECT(x, y, w, h, m)                                               \
+  (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) *             \
+   MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
+#define MOUSEMASK (BUTTONMASK | PointerMotionMask)
+#define TAGMASK ((1 << LENGTH(tags)) - 1)
+#define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
+#define CLAMP(x, min, max)                                                     \
+  (((x) < (min)) ? (min) : (((x) > (max)) ? (max) : (x)))
 
 /* Function Declarations */
 // Window Functions
@@ -286,10 +328,10 @@ void handleFocusIn(XEvent *e);
 void handleMouseMotion(XEvent *e);
 void handlePropertyChange(XEvent *e);
 void handleWindowUnmap(XEvent *e);
-void mappingnotify(XEvent *e);
-void maprequest(XEvent *e);
-void keypress(XEvent *e);
-void configurenotify(XEvent *e);
+void handleKeymappingChange(XEvent *e);
+void handleWindowMappingRequest(XEvent *e);
+void handleKeypress(XEvent *e);
+void handleWindowConfigChange(XEvent *e);
 
 // Dashboard Functions
 void drawDash(Monitor *m);
@@ -320,6 +362,9 @@ void resizemouse(const Arg *arg);
 int getrootptr(int *x, int *y);
 
 // Action Functions
+void executeKeybinding(Keybinding *kb);
+void free_command_args(char **argv);
+char **parse_command_string(const char *cmd);
 void killclient(const Arg *arg);
 void quit(const Arg *arg);
 void spawn(const Arg *arg);
@@ -344,9 +389,16 @@ int xerrorstart(Display *dpy, XErrorEvent *ee);
 extern Display *dpy;
 extern Monitor *monitors;
 extern Monitor *selectedMonitor;
+extern Drw *drw;
 extern Clr **scheme;
-extern int bh;
+extern Cur *cursor[CurLast];
 extern Window root;
+extern Atom wmatom[WMLast], netatom[NetLast];
+extern int bh;
 extern unsigned int numlockmask;
+extern int screenWidth, screenHeight;
+extern int lrpad;
+extern char stext[256];
+extern int screen;
 
 #endif // _ATLASWM_H_

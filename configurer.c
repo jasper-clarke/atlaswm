@@ -192,10 +192,10 @@ void update_window_manager_state(void) {
   // Update monitor properties
   for (m = monitors; m; m = m->next) {
     // Update bar visibility and position
-    m->showbar = cfg.showDash;
-    m->topbar = cfg.topBar;
+    m->showDash = cfg.showDash;
+    m->dashPos = cfg.topBar;
     updateDashPosition(m);
-    XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+    XMoveResizeWindow(dpy, m->dashWin, m->wx, m->dashPos, m->ww, bh);
 
     // Update all clients on this monitor
     for (c = m->clients; c; c = c->next) {
@@ -203,7 +203,7 @@ void update_window_manager_state(void) {
         // Update border width
         c->borderWidth = cfg.borderWidth;
         XSetWindowBorder(dpy, c->win,
-                         (c == selectedMonitor->sel)
+                         (c == selectedMonitor->active)
                              ? scheme[SchemeSel][ColBorder].pixel
                              : scheme[SchemeNorm][ColBorder].pixel);
 
@@ -280,14 +280,15 @@ int load_config(const char *config_path) {
 
     toml_datum_t active = toml_string_in(border, "active");
     if (active.ok) {
-      strncpy(cfg.borderActiveColor, active.u.s, sizeof(cfg.borderActiveColor));
+      safe_strcpy(cfg.borderActiveColor, active.u.s,
+                  sizeof(cfg.borderActiveColor));
       free(active.u.s);
     }
 
     toml_datum_t inactive = toml_string_in(border, "inactive");
     if (inactive.ok) {
-      strncpy(cfg.borderInactiveColor, inactive.u.s,
-              sizeof(cfg.borderInactiveColor));
+      safe_strcpy(cfg.borderInactiveColor, inactive.u.s,
+                  sizeof(cfg.borderInactiveColor));
       free(inactive.u.s);
     }
   }
@@ -323,14 +324,14 @@ int load_config(const char *config_path) {
 
   // window configuration
   toml_table_t *windows = toml_table_in(conf, "windows");
-  if (layout) {
-    toml_datum_t focus_new_windows = toml_bool_in(layout, "focus_new_windows");
+  if (windows) {
+    toml_datum_t focus_new_windows = toml_bool_in(windows, "focus_new_windows");
     if (focus_new_windows.ok) {
       cfg.focusNewWindows = focus_new_windows.u.b;
     }
 
     toml_datum_t move_cursor_with_focus =
-        toml_bool_in(layout, "move_cursor_with_focus");
+        toml_bool_in(windows, "move_cursor_with_focus");
     if (move_cursor_with_focus.ok) {
       cfg.moveCursorWithFocus = move_cursor_with_focus.u.b;
     }
