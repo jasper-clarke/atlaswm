@@ -94,16 +94,14 @@ static const char *colors[][3] = {
 };
 
 /* tagging */
-static const char *tags[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
+/* static const char *tags[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"}; */
 
-static const Layout layouts[] = {
-    {"DwindleGaps", dwindlegaps}, {"Floating", NULL}, {"Full", monocle},
-    {"Dwindle", dwindle},         {"Master", tile},
+const Layout layouts[] = {
+    {"dwindle", dwindlegaps},
+    {"floating", NULL},
+    {"full", monocle},
+    {"tile", tile},
 };
-
-// Array of startup programs
-static const char *exec[] = {"kitty",    NULL,        "picom", NULL,
-                             "nitrogen", "--restore", NULL};
 
 #define MODKEY Mod4Mask
 #define TAGKEYS(KEY, TAG)                                                      \
@@ -127,13 +125,7 @@ static const Button buttons[] = {
 };
 /* HACK: End of hack*/
 
-/* compile-time check if all tags fit into an unsigned int bit array. */
-struct NumTags {
-  char limitexceeded[LENGTH(tags) > 31 ? -1 : 1];
-};
-
 /* function implementations */
-
 void attach(Client *c) {
   if (!c->monitor->clients) {
     // If there are no clients, this becomes the first one
@@ -815,50 +807,46 @@ void setfocus(Client *c) {
   sendevent(c, wmatom[WMTakeFocus]);
 }
 
-// Function to run list of programs at startup
 void startupPrograms() {
-  pid_t pid;
-  const char **args;
-  int i;
+  if (!cfg.startup_progs || cfg.startup_prog_count == 0) {
+    return;
+  }
 
-  /* iterate through startup programs */
-  for (i = 0; exec[i];) {
-    /* Find the command and its arguments */
-    args = &exec[i];
-
-    /* Count arguments to find next command */
-    while (exec[i])
-      i++;
-    i++; /* Skip the NULL terminator */
-
-    /* Create new process */
-    if ((pid = fork()) == -1) {
-      LOG_ERROR("Failed to fork for '%s': %s", args[0], strerror(errno));
+  for (int i = 0; i < cfg.startup_prog_count; i++) {
+    StartupProgram *prog = &cfg.startup_progs[i];
+    if (!prog->command || !prog->args) {
+      LOG_ERROR("Invalid startup program at index %d", i);
       continue;
     }
 
-    /* Child process */
-    if (pid == 0) {
-      /* Close X connection in child */
-      if (dpy)
-        close(ConnectionNumber(dpy));
+    pid_t pid = fork();
+    if (pid == -1) {
+      LOG_ERROR("Failed to fork for '%s': %s", prog->command, strerror(errno));
+      continue;
+    }
 
-      /* Create new session */
+    if (pid == 0) { // Child process
+      // Close X connection in child
+      if (dpy) {
+        close(ConnectionNumber(dpy));
+      }
+
+      // Create new session
       if (setsid() == -1) {
-        LOG_ERROR("setsid failed for '%s': %s", args[0], strerror(errno));
+        LOG_ERROR("setsid failed for '%s': %s", prog->command, strerror(errno));
         exit(EXIT_FAILURE);
       }
 
-      /* Execute the program with its arguments */
-      execvp(args[0], (char *const *)args);
+      // Execute the program
+      execvp(prog->command, prog->args);
 
-      /* If we get here, execvp failed */
-      LOG_ERROR("Failed to execute '%s': %s", args[0], strerror(errno));
+      // If we get here, execvp failed
+      LOG_ERROR("Failed to execute '%s': %s", prog->command, strerror(errno));
       exit(EXIT_FAILURE);
     }
 
-    /* Parent process */
-    LOG_INFO("Started program: %s (pid: %d)", args[0], pid);
+    // Parent process
+    LOG_INFO("Started program: %s (pid: %d)", prog->command, pid);
   }
 }
 
@@ -952,6 +940,24 @@ void setup(void) {
   XChangeWindowAttributes(dpy, root, CWEventMask | CWCursor, &wa);
   XSelectInput(dpy, root, wa.event_mask);
   registerKeyboardShortcuts();
+  if (cfg.workspaceCount == 0 || cfg.workspaceCount > 31) {
+    LOG_ERROR("Invalid workspace count: %zu. Must be between 1 and 31.",
+              cfg.workspaceCount);
+    cfg.workspaceCount = 9; // Fallback to default
+    cfg.workspaces = ecalloc(cfg.workspaceCount, sizeof(Workspace));
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      char num[2];
+      snprintf(num, sizeof(num), "%zu", i + 1);
+      cfg.workspaces[i].name = strdup(num);
+    }
+  }
+
+  // Initialize monitor workspaces
+  Monitor *m;
+  for (m = monitors; m; m = m->next) {
+    // Set initial workspace (traditionally the first one)
+    m->workspaceset[0] = m->workspaceset[1] = 1;
+  }
   focus(NULL);
   startupPrograms();
 }
@@ -975,8 +981,8 @@ void spawn(const Arg *arg) {
 }
 
 void tag(const Arg *arg) {
-  if (selectedMonitor->active && arg->ui & TAGMASK) {
-    selectedMonitor->active->workspaces = arg->ui & TAGMASK;
+  if (selectedMonitor->active && arg->ui & WORKSPACEMASK) {
+    selectedMonitor->active->workspaces = arg->ui & WORKSPACEMASK;
     focus(NULL);
     arrange(selectedMonitor);
   }
@@ -995,7 +1001,7 @@ void toggletag(const Arg *arg) {
 
   if (!selectedMonitor->active)
     return;
-  newtags = selectedMonitor->active->workspaces ^ (arg->ui & TAGMASK);
+  newtags = selectedMonitor->active->workspaces ^ (arg->ui & WORKSPACEMASK);
   if (newtags) {
     selectedMonitor->active->workspaces = newtags;
     focus(NULL);
@@ -1006,7 +1012,7 @@ void toggletag(const Arg *arg) {
 void toggleview(const Arg *arg) {
   unsigned int newtagset =
       selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces] ^
-      (arg->ui & TAGMASK);
+      (arg->ui & WORKSPACEMASK);
 
   if (newtagset) {
     selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces] =
@@ -1130,13 +1136,13 @@ void updatenumlockmask(void) {
 }
 
 void view(const Arg *arg) {
-  if ((arg->ui & TAGMASK) ==
+  if ((arg->ui & WORKSPACEMASK) ==
       selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces])
     return;
   selectedMonitor->selectedWorkspaces ^= 1; /* toggle sel tagset */
-  if (arg->ui & TAGMASK)
+  if (arg->ui & WORKSPACEMASK)
     selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces] =
-        arg->ui & TAGMASK;
+        arg->ui & WORKSPACEMASK;
   focus(NULL);
   arrange(selectedMonitor);
 }

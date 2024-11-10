@@ -113,6 +113,16 @@ typedef struct {
   char description[MAX_VALUE_LENGTH];
 } Keybinding;
 
+typedef struct {
+  char *command; // The main command
+  char **args;   // Array of arguments (NULL terminated)
+  int arg_count; // Number of arguments
+} StartupProgram;
+
+typedef struct {
+  char *name; // Workspace name
+} Workspace;
+
 // Window rule configuration
 typedef struct {
   const char *class;    // Window class
@@ -259,7 +269,7 @@ void drw_map(Drw *drw, Window win, int x, int y, unsigned int w,
   (MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) *             \
    MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
 #define MOUSEMASK (BUTTONMASK | PointerMotionMask)
-#define TAGMASK ((1 << LENGTH(tags)) - 1)
+#define WORKSPACEMASK ((1U << cfg.workspaceCount) - 1)
 #define TEXTW(X) (drw_fontset_getwidth(drw, (X)) + lrpad)
 #define CLAMP(x, min, max)                                                     \
   (((x) < (min)) ? (min) : (((x) > (max)) ? (max) : (x)))
@@ -404,5 +414,6 @@ extern int screenWidth, screenHeight;
 extern int lrpad;
 extern char stext[256];
 extern int screen;
+extern const Layout layouts[];
 
 #endif // _ATLASWM_H_

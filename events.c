@@ -13,11 +13,6 @@
 /* tagging */
 static const char *tags[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
-static const Layout layouts[] = {
-    {"DwindleGaps", dwindlegaps}, {"Floating", NULL}, {"Full", monocle},
-    {"Dwindle", dwindle},         {"Master", tile},
-};
-
 #define MODKEY Mod4Mask
 
 static const Button buttons[] = {
@@ -51,9 +46,9 @@ void handleMouseButtonPress(XEvent *e) {
   if (ev->window == selectedMonitor->dashWin) {
     i = x = 0;
     do
-      x += TEXTW(tags[i]);
-    while (ev->x >= x && ++i < LENGTH(tags));
-    if (i < LENGTH(tags)) {
+      x += TEXTW(cfg.workspaces[i].name);
+    while (ev->x >= x && ++i < cfg.workspaceCount);
+    if (i < cfg.workspaceCount) {
       click = ClkTagBar;
       arg.ui = 1 << i;
     } else if (ev->x < x + TEXTW(selectedMonitor->layoutSymbol))

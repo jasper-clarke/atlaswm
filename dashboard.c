@@ -32,13 +32,13 @@ void drawDash(Monitor *m) {
       urg |= c->workspaces;
   }
   x = 0;
-  for (i = 0; i < LENGTH(tags); i++) {
-    w = TEXTW(tags[i]);
+  for (i = 0; i < cfg.workspaceCount; i++) {
+    w = TEXTW(cfg.workspaces[i].name);
     drw_setscheme(
         drw,
         scheme[m->workspaceset[m->selectedWorkspaces] & 1 << i ? SchemeSel
                                                                : SchemeNorm]);
-    drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
+    drw_text(drw, x, 0, w, bh, lrpad / 2, cfg.workspaces[i].name, urg & 1 << i);
     if (occ & 1 << i)
       drw_rect(drw, x + boxs, boxs, boxw, boxw,
                m == selectedMonitor && selectedMonitor->active &&

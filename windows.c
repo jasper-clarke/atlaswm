@@ -11,7 +11,6 @@
 
 static const char broken[] = "BORKED";
 /* HACK: Need to implement TOML config for these */
-static const char *tags[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
 static const Rule rules[] = {
     /* xprop(1):
      *	WM_CLASS(STRING) = instance, class
@@ -251,8 +250,8 @@ void applyWindowRules(Client *c) {
   if (ch.res_name)
     XFree(ch.res_name);
   c->workspaces =
-      c->workspaces & TAGMASK
-          ? c->workspaces & TAGMASK
+      c->workspaces & WORKSPACEMASK
+          ? c->workspaces & WORKSPACEMASK
           : c->monitor->workspaceset[c->monitor->selectedWorkspaces];
 }
 

@@ -1,0 +1,34 @@
+startup_progs = ["kitty", "nitrogen --restore", "picom --daemon"]
+workspaces = [
+  "web",
+  "code",
+  "music"
+]
+
+[gaps]
+outer = 30
+inner = 20
+
+[border]
+width = 3
+
+[layout]
+master_count = 2
+
+[dashboard]
+position = "top"
+show = true
+
+[performance]
+refresh_rate = 144
+
+[keybindings]
+"Super+e" = { action = "spawn", value = "kitty", desc = "Launch Terminal" }
+"Super+space" = { action = "spawn", value = "rofi -show drun -theme ~/.config/rofi/launcher.rasi", desc = "Launch Applications" }
+"Super+q" = { action = "killclient", desc = "Kill current window" }
+"Super+r" = { action = "reload", desc = "Reload configuration" }
+"Super+f" = { action = "togglefloating", desc = "Toggle floating mode" }
+"Super+l" = { action = "focusmonitor", value = "next", desc = "Focus next monitor" }
+"Super+h" = { action = "focusmonitor", value = "prev", desc = "Focus previous monitor" }
+"Super+Shift+l" = { action = "movetomonitor", value = "next", desc = "Move window to next monitor" }
+"Super+Shift+h" = { action = "movetomonitor", value = "prev", desc = "Move window to previous monitor" }

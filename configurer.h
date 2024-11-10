@@ -15,7 +15,6 @@ typedef struct {
   // Dash
   int showDash;
   int topBar;
-  // char *fonts[];
 
   // Layout
   int snapDistance;
@@ -33,6 +32,14 @@ typedef struct {
 
   // Performance
   int refreshRate;
+
+  // Workspaces
+  Workspace *workspaces;
+  size_t workspaceCount;
+
+  // General
+  StartupProgram *startup_progs;
+  int startup_prog_count;
 } Config;
 
 // Global configuration instance
@@ -48,10 +55,11 @@ extern int bh; // bar height
 int load_config(const char *config_path);
 void apply_config(void);
 void reload_config(void);
-// Add these function declarations
 ActionType string_to_action(const char *action);
 unsigned int parse_modifier(const char *mod);
 KeySym parse_key(const char *key);
 void register_keybinding(Keybinding *binding);
+void free_startup_programs(Config *cfg);
+void parse_startup_program(const char *cmd_str, StartupProgram *prog);
 
 #endif // _CONFIG_MANAGER_H_

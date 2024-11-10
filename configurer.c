@@ -82,9 +82,8 @@ KeySym parse_key(const char *key) {
   return XStringToKeysym(key);
 }
 
-void parse_keybinding(const char *key_str, toml_table_t *binding_table,
-                      Config *cfg) {
-  if (cfg->keybindingCount >= MAX_KEYBINDINGS) {
+void parse_keybinding(const char *key_str, toml_table_t *binding_table) {
+  if (cfg.keybindingCount >= MAX_KEYBINDINGS) {
     LOG_ERROR("Maximum number of keybindings reached");
     return;
   }
@@ -116,7 +115,7 @@ void parse_keybinding(const char *key_str, toml_table_t *binding_table,
   LOG_INFO("Action: %s", action.u.s);
 
   // Create the keybinding
-  Keybinding *kb = &cfg->keybindings[cfg->keybindingCount];
+  Keybinding *kb = &cfg.keybindings[cfg.keybindingCount];
   kb->modifier = parse_modifier(modifier_str);
   kb->keysym = parse_key(key);
   kb->action = string_to_action(action.u.s);
@@ -137,19 +136,19 @@ void parse_keybinding(const char *key_str, toml_table_t *binding_table,
 
   free(modifier_str);
   free(action.u.s);
-  cfg->keybindingCount++;
+  cfg.keybindingCount++;
 
   LOG_INFO("Added keybinding: %s -> %s", key_str, kb->description);
 }
 
-void load_keybindings(toml_table_t *conf, Config *cfg) {
+void load_keybindings(toml_table_t *conf) {
   toml_table_t *keybindings = toml_table_in(conf, "keybindings");
   if (!keybindings) {
     LOG_INFO("No keybindings configuration found");
     return;
   }
 
-  cfg->keybindingCount = 0;
+  cfg.keybindingCount = 0;
 
   // Get number of entries in the keybindings table
   int keycount = toml_table_nkval(keybindings) + toml_table_ntab(keybindings);
@@ -161,7 +160,146 @@ void load_keybindings(toml_table_t *conf, Config *cfg) {
 
     toml_table_t *binding = toml_table_in(keybindings, key);
     if (binding) {
-      parse_keybinding(key, binding, cfg);
+      parse_keybinding(key, binding);
+    }
+  }
+}
+
+// Function to split command string into command and arguments
+void parse_startup_program(const char *cmd_str, StartupProgram *prog) {
+  char *str = strdup(cmd_str);
+  char *token;
+  int capacity = 10; // Initial capacity for arguments array
+
+  prog->args = malloc(capacity * sizeof(char *));
+  prog->arg_count = 0;
+
+  // Get the command (first word)
+  token = strtok(str, " ");
+  if (token) {
+    prog->command = strdup(token);
+    prog->args[prog->arg_count++] = strdup(token);
+
+    // Parse remaining arguments
+    while ((token = strtok(NULL, " ")) != NULL) {
+      if (prog->arg_count >= capacity - 1) { // -1 for NULL terminator
+        capacity *= 2;
+        prog->args = realloc(prog->args, capacity * sizeof(char *));
+      }
+      prog->args[prog->arg_count++] = strdup(token);
+    }
+  }
+
+  // NULL terminate the arguments array
+  prog->args[prog->arg_count] = NULL;
+  free(str);
+}
+
+// Function to free startup program resources
+void free_startup_program(StartupProgram *prog) {
+  if (!prog)
+    return;
+
+  free(prog->command);
+
+  if (prog->args) {
+    for (int i = 0; i < prog->arg_count; i++) {
+      free(prog->args[i]);
+    }
+    free(prog->args);
+  }
+}
+
+void free_startup_programs(Config *cfg) {
+  if (cfg->startup_progs) {
+    for (int i = 0; i < cfg->startup_prog_count; i++) {
+      free_startup_program(&cfg->startup_progs[i]);
+    }
+    free(cfg->startup_progs);
+    cfg->startup_progs = NULL;
+    cfg->startup_prog_count = 0;
+  }
+}
+
+// Add this to your load_config function after other TOML parsing
+void load_startup_programs(toml_table_t *conf) {
+  // Free any existing startup programs
+  free_startup_programs(&cfg);
+
+  toml_array_t *startup = toml_array_in(conf, "startup_progs");
+  if (!startup) {
+    LOG_INFO("No startup programs configured");
+    return;
+  }
+
+  // Count the number of startup programs
+  int count = toml_array_nelem(startup);
+  if (count <= 0)
+    return;
+
+  // Allocate space for startup programs
+  cfg.startup_progs = calloc(count, sizeof(StartupProgram));
+  cfg.startup_prog_count = count;
+
+  // Parse each startup program
+  for (int i = 0; i < count; i++) {
+    toml_datum_t prog = toml_string_at(startup, i);
+    if (prog.ok) {
+      parse_startup_program(prog.u.s, &cfg.startup_progs[i]);
+      free(prog.u.s);
+    }
+  }
+}
+
+static void free_workspaces() {
+  if (cfg.workspaces) {
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      free(cfg.workspaces[i].name);
+    }
+    free(cfg.workspaces);
+    cfg.workspaces = NULL;
+    cfg.workspaceCount = 0;
+  }
+}
+
+static void load_workspaces(toml_table_t *conf) {
+  // Free existing workspaces if any
+  free_workspaces();
+
+  toml_array_t *workspaces = toml_array_in(conf, "workspaces");
+  if (!workspaces) {
+    // Set default workspaces if none specified
+    cfg.workspaceCount = 9;
+    cfg.workspaces = ecalloc(cfg.workspaceCount, sizeof(Workspace));
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      char num[2];
+      snprintf(num, sizeof(num), "%zu", i + 1);
+      cfg.workspaces[i].name = strdup(num);
+    }
+    return;
+  }
+
+  // Count array elements
+  cfg.workspaceCount = 0;
+  while (toml_raw_at(workspaces, cfg.workspaceCount)) {
+    cfg.workspaceCount++;
+  }
+
+  // Allocate workspace array
+  cfg.workspaces = ecalloc(cfg.workspaceCount, sizeof(Workspace));
+
+  // Load each workspace
+  for (size_t i = 0; i < cfg.workspaceCount; i++) {
+    toml_datum_t raw = toml_string_at(workspaces, i);
+    if (raw.ok) {
+      cfg.workspaces[i].name = strdup(raw.u.s);
+      free(raw.u.s);
+    } else {
+      LOG_ERROR("Failed to parse workspace %zu", i);
+      // Use default name as fallback
+      char num[2];
+      snprintf(num, sizeof(num), "%zu", i + 1);
+      cfg.workspaces[i].name = strdup(num);
     }
   }
 }
@@ -232,6 +370,8 @@ void update_window_manager_state(void) {
 
   // Update keybindings
   update_keybindings();
+
+  free_workspaces();
 
   // Sync changes
   XSync(dpy, False);
@@ -347,8 +487,9 @@ int load_config(const char *config_path) {
     }
   }
 
-  // Load keybindings
-  load_keybindings(conf, &cfg);
+  load_keybindings(conf);
+  load_startup_programs(conf);
+  load_workspaces(conf);
 
   toml_free(conf);
   return 1;
