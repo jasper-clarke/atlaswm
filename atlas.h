@@ -316,7 +316,6 @@ Monitor *findMonitorFromWindow(Window w);
 Monitor *findMonitorInDirection(int dir);
 Monitor *getMonitorForArea(int x, int y, int w, int h);
 void sendWindowToMonitor(Client *c, Monitor *m);
-void directWindowToMonitor(const Arg *arg);
 
 // Client Functions
 void attach(Client *c);
@@ -325,7 +324,7 @@ void attachWindowToStack(Client *c);
 void detachWindowFromStack(Client *c);
 Client *findClientFromWindow(Window w);
 Client *getNextTiledWindow(Client *c);
-void updateclientlist(void);
+void updateClientList(void);
 
 // Event Handling Functions
 void handleMouseButtonPress(XEvent *e);
@@ -366,15 +365,13 @@ void restack(Monitor *m);
 // Input Handling Functions
 void registerMouseButtons(Client *c, int focused);
 void registerKeyboardShortcuts(void);
-void updatenumlockmask(void);
+void updateNumlockMask(void);
 void movemouse(const Arg *arg);
 void resizemouse(const Arg *arg);
 int getrootptr(int *x, int *y);
 
 // Action Functions
 void executeKeybinding(Keybinding *kb);
-void free_command_args(char **argv);
-char **parse_command_string(const char *cmd);
 void killclient(const Arg *arg);
 void quit(const Arg *arg);
 void spawn(const Arg *arg);
@@ -384,6 +381,11 @@ void toggleview(const Arg *arg);
 void view(const Arg *arg);
 void zoom(const Arg *arg);
 void pop(Client *c);
+void directWindowToMonitor(const Arg *arg);
+
+// Util
+void free_command_args(char **argv);
+char **parse_command_string(const char *cmd);
 
 // Main Functions
 void checkForOtherWM(void);
@@ -415,5 +417,7 @@ extern int lrpad;
 extern char stext[256];
 extern int screen;
 extern const Layout layouts[];
+extern void (*handler[LASTEvent])(XEvent *);
+extern int running;
 
 #endif // _ATLASWM_H_

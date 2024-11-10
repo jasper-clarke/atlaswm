@@ -2,7 +2,7 @@
 
 include config.mk
 
-SRC = draw.c atlas.c util.c layouts.c configurer.c ipc.c windows.c events.c dashboard.c ewmh.c
+SRC = draw.c atlas.c util.c layouts.c configurer.c ipc.c windows.c events.c dashboard.c ewmh.c input.c focus.c monitor.c client.c actions.c
 OBJ = ${SRC:.c=.o}
 
 all: atlaswm

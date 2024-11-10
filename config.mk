@@ -29,7 +29,7 @@ LIBS = -L${X11LIB} -lX11 ${XINERAMALIBS} ${FREETYPELIBS} -ltoml
 # flags
 CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" ${XINERAMAFLAGS}
 #CFLAGS   = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
-CFLAGS   = -std=gnu17 -pedantic -Wall -Wno-deprecated-declarations -Wno-variadic-macros -O2 ${INCS} ${CPPFLAGS}
+CFLAGS   = -std=gnu17 -pedantic -Wall -Wno-deprecated-declarations -Wno-format-truncation -Wno-variadic-macros -O2 ${INCS} ${CPPFLAGS}
 LDFLAGS  = ${LIBS}
 
 # Solaris

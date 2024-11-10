@@ -220,3 +220,27 @@ void dwindlegaps(Monitor *m) {
     i++;
   }
 }
+
+void restack(Monitor *m) {
+  Client *c;
+  XEvent ev;
+  XWindowChanges wc;
+
+  drawDash(m);
+  if (!m->active)
+    return;
+  if (m->active->isFloating || !m->layouts[m->selectedLayout]->arrange)
+    XRaiseWindow(dpy, m->active->win);
+  if (m->layouts[m->selectedLayout]->arrange) {
+    wc.stack_mode = Below;
+    wc.sibling = m->dashWin;
+    for (c = m->stack; c; c = c->nextInStack)
+      if (!c->isFloating && ISVISIBLE(c)) {
+        XConfigureWindow(dpy, c->win, CWSibling | CWStackMode, &wc);
+        wc.sibling = c->win;
+      }
+  }
+  XSync(dpy, False);
+  while (XCheckMaskEvent(dpy, EnterWindowMask, &ev))
+    ;
+}

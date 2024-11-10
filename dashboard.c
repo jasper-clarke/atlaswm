@@ -5,10 +5,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 
-/* HACK: Need to implement TOML config for these */
-static const char *tags[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
-/* HACK: End of hack*/
-
 void drawDash(Monitor *m) {
   int x, w, tw = 0;
   int boxs = drw->fonts->h / 9;

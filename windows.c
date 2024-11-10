@@ -120,7 +120,7 @@ void unmanage(Client *c, int destroyed) {
   free(c);
 
   focus(prev);
-  updateclientlist();
+  updateClientList();
   arrange(m);
 }
 

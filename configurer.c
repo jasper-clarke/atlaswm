@@ -310,7 +310,7 @@ void update_keybindings(void) {
   XUngrabKey(dpy, AnyKey, AnyModifier, root);
 
   // Register new keybindings
-  updatenumlockmask();
+  updateNumlockMask();
   unsigned int modifiers[] = {0, LockMask, numlockmask, numlockmask | LockMask};
 
   for (int i = 0; i < cfg.keybindingCount; i++) {
