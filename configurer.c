@@ -224,7 +224,7 @@ void update_window_manager_state(void) {
   }
 
   // Force a redraw of bars
-  drawDashes();
+  drawDashboards();
 
   // Rearrange all monitors to apply gap changes and new layouts
   arrange(NULL);

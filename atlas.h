@@ -335,9 +335,9 @@ void handleWindowConfigChange(XEvent *e);
 
 // Dashboard Functions
 void drawDash(Monitor *m);
-void drawDashes(void);
+void drawDashboards(void);
 void updateDashPosition(Monitor *m);
-void updatebars(void);
+void updateDashboards(void);
 void updatestatus(void);
 void toggleDash(const Arg *arg);
 

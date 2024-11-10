@@ -280,7 +280,7 @@ void focus(Client *c) {
     XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
   }
   selectedMonitor->active = c;
-  drawDashes();
+  drawDashboards();
 }
 
 void focusMonitor(const Arg *arg) {
@@ -930,7 +930,7 @@ void setup(void) {
   for (i = 0; i < LENGTH(colors); i++)
     scheme[i] = drw_scm_create(drw, colors[i], 3);
   /* init bars */
-  updatebars();
+  updateDashboards();
   setup_ipc(dpy);
   updatestatus();
   /* supporting window for NetWMCheck */

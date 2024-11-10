@@ -64,7 +64,7 @@ void drawDash(Monitor *m) {
   drw_map(drw, m->dashWin, 0, 0, m->ww, bh);
 }
 
-void drawDashes(void) {
+void drawDashboards(void) {
   Monitor *m;
 
   for (m = monitors; m; m = m->next)
@@ -82,7 +82,7 @@ void updateDashPosition(Monitor *m) {
     m->dashPos = -bh;
 }
 
-void updatebars(void) {
+void updateDashboards(void) {
   Monitor *m;
   XSetWindowAttributes wa = {.override_redirect = True,
                              .background_pixmap = ParentRelative,

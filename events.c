@@ -243,7 +243,7 @@ void handlePropertyChange(XEvent *e) {
       break;
     case XA_WM_HINTS:
       updateWindowManagerHints(c);
-      drawDashes();
+      drawDashboards();
       break;
     }
     if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
@@ -301,27 +301,49 @@ void handleKeypress(XEvent *e) {
 }
 
 void handleWindowConfigChange(XEvent *e) {
-  Monitor *m;
-  Client *c;
   XConfigureEvent *ev = &e->xconfigure;
-  int dirty;
 
-  /* TODO: updateMonitorGeometry handling sucks, needs to be simplified */
-  if (ev->window == root) {
-    dirty = (screenWidth != ev->width || screenHeight != ev->height);
-    screenWidth = ev->width;
-    screenHeight = ev->height;
-    if (updateMonitorGeometry() || dirty) {
-      drw_resize(drw, screenWidth, bh);
-      updatebars();
-      for (m = monitors; m; m = m->next) {
-        for (c = m->clients; c; c = c->next)
-          if (c->isFullscreen)
-            resizeclient(c, m->mx, m->my, m->mw, m->mh);
-        XMoveResizeWindow(dpy, m->dashWin, m->wx, m->dashPos, m->ww, bh);
-      }
-      focus(NULL);
-      arrange(NULL);
-    }
+  // Only handle root window configuration changes
+  if (ev->window != root) {
+    return;
   }
+
+  // Check if screen dimensions have changed
+  int dimensionsChanged =
+      (screenWidth != ev->width || screenHeight != ev->height);
+  if (!dimensionsChanged) {
+    return;
+  }
+
+  // Update screen dimensions
+  screenWidth = ev->width;
+  screenHeight = ev->height;
+
+  // Update monitor geometry and check if any monitors were affected
+  if (!updateMonitorGeometry() && !dimensionsChanged) {
+    return; // No changes needed
+  }
+
+  // Resize drawing context for the bar
+  drw_resize(drw, screenWidth, bh);
+
+  // Update all monitor bars
+  updateDashboards();
+
+  // Update all monitors and their clients
+  for (Monitor *m = monitors; m; m = m->next) {
+    // Resize fullscreen windows to match their monitor
+    for (Client *c = m->clients; c; c = c->next) {
+      if (c->isFullscreen) {
+        resizeclient(c, m->mx, m->my, m->mw, m->mh);
+      }
+    }
+
+    // Reposition and resize the monitor's bar window
+    XMoveResizeWindow(dpy, m->dashWin, m->wx, m->dashPos, m->ww, bh);
+  }
+
+  // Reset focus and rearrange all windows
+  focus(NULL);
+  arrange(NULL);
 }
