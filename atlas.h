@@ -385,6 +385,10 @@ int xerror(Display *dpy, XErrorEvent *ee);
 int xerrordummy(Display *dpy, XErrorEvent *ee);
 int xerrorstart(Display *dpy, XErrorEvent *ee);
 
+/* EWMH Functions */
+void ewmh_update_client_list(void);
+void ewmh_update_active_window(void);
+
 /* External Variables */
 extern Display *dpy;
 extern Monitor *monitors;
