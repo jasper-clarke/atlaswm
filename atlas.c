@@ -88,7 +88,7 @@ void cleanup(void) {
   Monitor *m;
   size_t i;
 
-  view(&a);
+  viewWorkspace(&a);
   selectedMonitor->layouts[selectedMonitor->selectedLayout] = &foo;
   for (m = monitors; m; m = m->next)
     while (m->stack)

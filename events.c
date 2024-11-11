@@ -14,9 +14,9 @@
 
 static const Button buttons[] = {
     /* click                event mask      button          function argument */
-    {ClkClientWin, MODKEY, Button1, movemouse, {0}},
+    {ClkClientWin, MODKEY, Button1, moveWindow, {0}},
     {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
-    {ClkClientWin, MODKEY, Button3, resizemouse, {0}},
+    {ClkClientWin, MODKEY, Button3, resizeWindow, {0}},
 };
 
 void handleMouseButtonPress(XEvent *e) {

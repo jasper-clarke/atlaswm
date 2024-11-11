@@ -133,7 +133,7 @@ Monitor *findMonitorFromWindow(Window w) {
   Client *c;
   Monitor *m;
 
-  if (w == root && getrootptr(&x, &y))
+  if (w == root && getRootPointer(&x, &y))
     return getMonitorForArea(x, y, 1, 1);
   for (m = monitors; m; m = m->next)
     ;

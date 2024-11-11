@@ -8,9 +8,9 @@
 #define MODKEY Mod4Mask
 static const Button buttons[] = {
     /* click                event mask      button          function argument */
-    {ClkClientWin, MODKEY, Button1, movemouse, {0}},
+    {ClkClientWin, MODKEY, Button1, moveWindow, {0}},
     {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
-    {ClkClientWin, MODKEY, Button3, resizemouse, {0}},
+    {ClkClientWin, MODKEY, Button3, resizeWindow, {0}},
 };
 
 void registerMouseButtons(Client *c, int focused) {
@@ -71,8 +71,7 @@ void updateNumlockMask(void) {
   XFreeModifiermap(modmap);
 }
 
-// TODO: Rename
-void movemouse(const Arg *arg) {
+void moveWindow(const Arg *arg) {
   int x, y, ocx, ocy, nx, ny;
   Client *c;
   Monitor *m;
@@ -89,7 +88,7 @@ void movemouse(const Arg *arg) {
   if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
                    None, cursor[CurMove]->cursor, CurrentTime) != GrabSuccess)
     return;
-  if (!getrootptr(&x, &y))
+  if (!getRootPointer(&x, &y))
     return;
   do {
     XMaskEvent(dpy, MOUSEMASK | ExposureMask | SubstructureRedirectMask, &ev);
@@ -103,7 +102,6 @@ void movemouse(const Arg *arg) {
       if ((ev.xmotion.time - lasttime) <= (1000 / cfg.refreshRate))
         continue;
       lasttime = ev.xmotion.time;
-
       nx = ocx + (ev.xmotion.x - x);
       ny = ocy + (ev.xmotion.y - y);
       if (abs(selectedMonitor->wx - nx) < cfg.snapDistance)
@@ -135,14 +133,13 @@ void movemouse(const Arg *arg) {
   }
 }
 
-// TODO: Rename
-void resizemouse(const Arg *arg) {
+void resizeWindow(const Arg *arg) {
   int ocx, ocy, nw, nh;
   Client *c;
   Monitor *m;
   XEvent ev;
-  Time lasttime = 0;
   int isDwindle;
+  Time lasttime = 0;
 
   if (!(c = selectedMonitor->active))
     return;
@@ -231,8 +228,7 @@ void resizemouse(const Arg *arg) {
   }
 }
 
-// TODO: Rename
-int getrootptr(int *x, int *y) {
+int getRootPointer(int *x, int *y) {
   int di;
   unsigned int dui;
   Window dummy;

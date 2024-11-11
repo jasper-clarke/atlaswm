@@ -298,19 +298,19 @@ void restack(Monitor *m);
 void registerMouseButtons(Client *c, int focused);
 void registerKeyboardShortcuts(void);
 void updateNumlockMask(void);
-void movemouse(const Arg *arg);
-void resizemouse(const Arg *arg);
-int getrootptr(int *x, int *y);
+void moveWindow(const Arg *arg);
+void resizeWindow(const Arg *arg);
+int getRootPointer(int *x, int *y);
 
 // Action Functions
 void executeKeybinding(Keybinding *kb);
 void killclient(const Arg *arg);
 void quit(const Arg *arg);
 void spawn(const Arg *arg);
-void tag(const Arg *arg);
-void toggletag(const Arg *arg);
-void toggleview(const Arg *arg);
-void view(const Arg *arg);
+void moveToWorkspace(const Arg *arg);
+void duplicateToWorkspace(const Arg *arg);
+void toggleWorkspace(const Arg *arg);
+void viewWorkspace(const Arg *arg);
 void zoom(const Arg *arg);
 void pop(Client *c);
 void directWindowToMonitor(const Arg *arg);

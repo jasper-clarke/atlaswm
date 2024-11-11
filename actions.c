@@ -121,7 +121,7 @@ void spawn(const Arg *arg) {
   }
 }
 
-void tag(const Arg *arg) {
+void moveToWorkspace(const Arg *arg) {
   if (selectedMonitor->active && arg->ui & WORKSPACEMASK) {
     selectedMonitor->active->workspaces = arg->ui & WORKSPACEMASK;
     focus(NULL);
@@ -129,7 +129,7 @@ void tag(const Arg *arg) {
   }
 }
 
-void toggletag(const Arg *arg) {
+void duplicateToWorkspace(const Arg *arg) {
   unsigned int newtags;
 
   if (!selectedMonitor->active)
@@ -143,7 +143,7 @@ void toggletag(const Arg *arg) {
   updateCurrentDesktop();
 }
 
-void toggleview(const Arg *arg) {
+void toggleWorkspace(const Arg *arg) {
   unsigned int newtagset =
       selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces] ^
       (arg->ui & WORKSPACEMASK);
@@ -157,7 +157,7 @@ void toggleview(const Arg *arg) {
   updateCurrentDesktop();
 }
 
-void view(const Arg *arg) {
+void viewWorkspace(const Arg *arg) {
   if ((arg->ui & WORKSPACEMASK) ==
       selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces])
     return;
