@@ -135,11 +135,16 @@ void moveWindow(const Arg *arg) {
 
 void resizeWindow(const Arg *arg) {
   int ocx, ocy, nw, nh;
+  int ocx2, ocy2, nx, ny;
   Client *c;
   Monitor *m;
   XEvent ev;
-  int isDwindle;
+  Window dummy;
+  int hCorner, vCorner;
+  int di;
+  unsigned int dui;
   Time lasttime = 0;
+  int isDwindle;
 
   if (!(c = selectedMonitor->active))
     return;
@@ -153,18 +158,20 @@ void resizeWindow(const Arg *arg) {
   restack(selectedMonitor);
   ocx = c->x;
   ocy = c->y;
+  ocx2 = c->x + c->w;
+  ocy2 = c->y + c->h;
 
   if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
                    None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
     return;
 
-  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->borderWidth - 1,
-               c->h + c->borderWidth - 1);
-
-  int startW = c->w;
-  int startH = c->h;
-  float startHRatio = c->horizontalRatio > 0 ? c->horizontalRatio : 0.5;
-  float startVRatio = c->verticalRatio > 0 ? c->verticalRatio : 0.5;
+  if (!XQueryPointer(dpy, c->win, &dummy, &dummy, &di, &di, &nx, &ny, &dui))
+    return;
+  hCorner = nx < c->w / 2;
+  vCorner = ny < c->h / 2;
+  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0,
+               hCorner ? (-c->borderWidth) : (c->w + c->borderWidth - 1),
+               vCorner ? (-c->borderWidth) : (c->h + c->borderWidth - 1));
 
   do {
     XMaskEvent(dpy, MOUSEMASK | ExposureMask | SubstructureRedirectMask, &ev);
@@ -178,24 +185,25 @@ void resizeWindow(const Arg *arg) {
       if ((ev.xmotion.time - lasttime) <= (1000 / cfg.refreshRate))
         continue;
       lasttime = ev.xmotion.time;
+      nx = hCorner && ocx2 - ev.xmotion.x >= c->minw ? ev.xmotion.x : c->x;
+      ny = vCorner && ocy2 - ev.xmotion.y >= c->minh ? ev.xmotion.y : c->y;
+      nw = MAX(hCorner ? (ocx2 - nx)
+                       : (ev.xmotion.x - ocx - 2 * c->borderWidth + 1),
+               1);
+      nh = MAX(vCorner ? (ocy2 - ny)
+                       : (ev.xmotion.y - ocy - 2 * c->borderWidth + 1),
+               1);
 
-      nw = MAX(ev.xmotion.x - ocx - 2 * c->borderWidth + 1, 1);
-      nh = MAX(ev.xmotion.y - ocy - 2 * c->borderWidth + 1, 1);
+      if (hCorner && ev.xmotion.x > ocx2)
+        nx = ocx2 - (nw = c->minw);
+      if (vCorner && ev.xmotion.y > ocy2)
+        ny = ocy2 - (nh = c->minh);
 
       if (isDwindle) {
         if (c->isFloating) {
-          resize(c, c->x, c->y, nw, nh, 1);
+          resize(c, nx, ny, nw, nh, 1);
         } else {
-
-          // Calculate new ratios based on mouse movement
-          float dx = (float)(nw - startW) / startW;
-          float dy = (float)(nh - startH) / startH;
-
-          // Update the ratios (bounded between 0.1 and 0.9)
-          c->horizontalRatio = CLAMP(startHRatio + (dx / 2), 0.1, 0.9);
-          c->verticalRatio = CLAMP(startVRatio + (dy / 2), 0.1, 0.9);
-
-          arrange(selectedMonitor);
+          // TODO: Implement dwindle layout
         }
       } else {
         // Original floating window resize behavior
@@ -209,14 +217,15 @@ void resizeWindow(const Arg *arg) {
         if (!selectedMonitor->layouts[selectedMonitor->selectedLayout]
                  ->arrange ||
             c->isFloating)
-          resize(c, c->x, c->y, nw, nh, 1);
+          resize(c, nx, ny, nw, nh, 1);
       }
       break;
     }
   } while (ev.type != ButtonRelease);
 
-  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->borderWidth - 1,
-               c->h + c->borderWidth - 1);
+  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0,
+               hCorner ? (-c->borderWidth) : (c->w + c->borderWidth - 1),
+               vCorner ? (-c->borderWidth) : (c->h + c->borderWidth - 1));
   XUngrabPointer(dpy, CurrentTime);
   while (XCheckMaskEvent(dpy, EnterWindowMask, &ev))
     ;
