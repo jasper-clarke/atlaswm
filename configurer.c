@@ -31,6 +31,10 @@ static const struct {
                   {"togglefloating", ACTION_TOGGLEFLOATING},
                   {"focusmonitor", ACTION_FOCUSMONITOR},
                   {"movetomonitor", ACTION_MOVETOMONITOR},
+                  {"viewworkspace", ACTION_VIEWWORKSPACE},
+                  {"movetoworkspace", ACTION_MOVETOWORKSPACE},
+                  {"duplicatetoworkspace", ACTION_DUPLICATETOWORKSPACE},
+                  {"toggleworkspace", ACTION_TOGGLEWORKSPACE},
                   {"quit", ACTION_QUIT},
                   {NULL, ACTION_UNKNOWN}};
 

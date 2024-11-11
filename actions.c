@@ -77,6 +77,50 @@ void executeKeybinding(Keybinding *kb) {
     toggleWindowFloating(&arg);
     break;
 
+  case ACTION_VIEWWORKSPACE:
+    // Convert workspace name to index
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      if (strcasecmp(kb->value, cfg.workspaces[i].name) == 0) {
+        arg.ui = 1 << i;
+        break;
+      }
+    }
+    viewWorkspace(&arg);
+    break;
+
+  case ACTION_MOVETOWORKSPACE:
+    // Convert workspace name to index
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      if (strcasecmp(kb->value, cfg.workspaces[i].name) == 0) {
+        arg.ui = 1 << i;
+        break;
+      }
+    }
+    moveToWorkspace(&arg);
+    break;
+
+  case ACTION_DUPLICATETOWORKSPACE:
+    // Convert workspace name to index
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      if (strcasecmp(kb->value, cfg.workspaces[i].name) == 0) {
+        arg.ui = 1 << i;
+        break;
+      }
+    }
+    duplicateToWorkspace(&arg);
+    break;
+
+  case ACTION_TOGGLEWORKSPACE:
+    // Convert workspace name to index
+    for (size_t i = 0; i < cfg.workspaceCount; i++) {
+      if (strcasecmp(kb->value, cfg.workspaces[i].name) == 0) {
+        arg.ui = 1 << i;
+        break;
+      }
+    }
+    toggleWorkspace(&arg);
+    break;
+
   case ACTION_QUIT:
     quit(&arg);
     break;

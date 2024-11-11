@@ -28,3 +28,7 @@ refresh_rate = 144
 "Super+h" = { action = "focusmonitor", value = "prev", desc = "Focus previous monitor" }
 "Super+Shift+l" = { action = "movetomonitor", value = "next", desc = "Move window to next monitor" }
 "Super+Shift+h" = { action = "movetomonitor", value = "prev", desc = "Move window to previous monitor" }
+"Super+1" = { action = "viewworkspace", value = "web", desc = "View web workspace"   }
+"Super+2" = { action = "viewworkspace", value = "code", desc = "View code workspace  " }
+"Super+Shift+1" = { action = "movetoworkspace", value = "web", desc = "View web wor  kspace" }
+"Super+Shift+2" = { action = "movetoworkspace", value = "code", desc = "View code w  orkspace" }
