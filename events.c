@@ -14,20 +14,13 @@
 
 static const Button buttons[] = {
     /* click                event mask      button          function argument */
-    {ClkLtSymbol, 0, Button1, setlayout, {0}},
-    {ClkLtSymbol, 0, Button3, setlayout, {.v = &layouts[2]}},
-    {ClkWinTitle, 0, Button2, zoom, {0}},
     {ClkClientWin, MODKEY, Button1, movemouse, {0}},
     {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
     {ClkClientWin, MODKEY, Button3, resizemouse, {0}},
-    {ClkTagBar, 0, Button1, view, {0}},
-    {ClkTagBar, 0, Button3, toggleview, {0}},
-    {ClkTagBar, MODKEY, Button1, tag, {0}},
-    {ClkTagBar, MODKEY, Button3, toggletag, {0}},
 };
 
 void handleMouseButtonPress(XEvent *e) {
-  unsigned int i, x, click;
+  unsigned int i, click;
   Arg arg = {0};
   Client *c;
   Monitor *m;
@@ -40,21 +33,7 @@ void handleMouseButtonPress(XEvent *e) {
     selectedMonitor = m;
     focus(NULL);
   }
-  if (ev->window == selectedMonitor->dashWin) {
-    i = x = 0;
-    do
-      x += TEXTW(cfg.workspaces[i].name);
-    while (ev->x >= x && ++i < cfg.workspaceCount);
-    if (i < cfg.workspaceCount) {
-      click = ClkTagBar;
-      arg.ui = 1 << i;
-    } else if (ev->x < x + TEXTW(selectedMonitor->layoutSymbol))
-      click = ClkLtSymbol;
-    else if (ev->x > selectedMonitor->ww - (int)TEXTW(stext))
-      click = ClkStatusText;
-    else
-      click = ClkWinTitle;
-  } else if ((c = findClientFromWindow(ev->window))) {
+  if ((c = findClientFromWindow(ev->window))) {
     focus(c);
     restack(selectedMonitor);
     XAllowEvents(dpy, ReplayPointer, CurrentTime);
@@ -64,8 +43,7 @@ void handleMouseButtonPress(XEvent *e) {
     if (click == buttons[i].click && buttons[i].func &&
         buttons[i].button == ev->button &&
         CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-      buttons[i].func(
-          click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+      buttons[i].func(buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 }
 
 void handleClientMessage(XEvent *e) {
@@ -166,14 +144,6 @@ void handleMouseEnter(XEvent *e) {
   focus(c);
 }
 
-void handleExpose(XEvent *e) {
-  Monitor *m;
-  XExposeEvent *ev = &e->xexpose;
-
-  if (ev->count == 0 && (m = findMonitorFromWindow(ev->window)))
-    drawDash(m);
-}
-
 /* there are some broken focus acquiring clients needing extra handling */
 void handleFocusIn(XEvent *e) {
   XFocusChangeEvent *ev = &e->xfocus;
@@ -217,9 +187,7 @@ void handlePropertyChange(XEvent *e) {
         XFree(data);
       }
     }
-  } else if ((ev->window == root) && (ev->atom == XA_WM_NAME))
-    updatestatus();
-  else if (ev->state == PropertyDelete)
+  } else if (ev->state == PropertyDelete)
     return; /* ignore */
   else if ((c = findClientFromWindow(ev->window))) {
     switch (ev->atom) {
@@ -235,13 +203,10 @@ void handlePropertyChange(XEvent *e) {
       break;
     case XA_WM_HINTS:
       updateWindowManagerHints(c);
-      drawDashboards();
       break;
     }
     if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
       updateWindowTitle(c);
-      if (c == c->monitor->active)
-        drawDash(c->monitor);
     }
     if (ev->atom == netatom[NetWMWindowType])
       updateWindowTypeProps(c);
@@ -316,12 +281,6 @@ void handleWindowConfigChange(XEvent *e) {
     return; // No changes needed
   }
 
-  // Resize drawing context for the bar
-  drw_resize(drw, screenWidth, bh);
-
-  // Update all monitor bars
-  updateDashboards();
-
   // Update all monitors and their clients
   for (Monitor *m = monitors; m; m = m->next) {
     // Resize fullscreen windows to match their monitor
@@ -330,9 +289,6 @@ void handleWindowConfigChange(XEvent *e) {
         resizeclient(c, m->mx, m->my, m->mw, m->mh);
       }
     }
-
-    // Reposition and resize the monitor's bar window
-    XMoveResizeWindow(dpy, m->dashWin, m->wx, m->dashPos, m->ww, bh);
   }
 
   // Reset focus and rearrange all windows

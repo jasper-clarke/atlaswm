@@ -12,9 +12,6 @@ typedef struct {
   unsigned int borderWidth;
   char borderActiveColor[8];
   char borderInactiveColor[8];
-  // Dash
-  int showDash;
-  int topBar;
 
   // Layout
   int snapDistance;
@@ -48,8 +45,6 @@ extern Config cfg;
 extern Display *dpy;
 extern Monitor *monitors;
 extern Monitor *selectedMonitor;
-extern Clr **scheme;
-extern int bh; // bar height
 
 // Function declarations
 int load_config(const char *config_path);

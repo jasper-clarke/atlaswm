@@ -2,7 +2,7 @@
 
 include config.mk
 
-SRC = draw.c atlas.c util.c layouts.c configurer.c ipc.c windows.c events.c dashboard.c ewmh.c input.c focus.c monitor.c client.c actions.c
+SRC = draw.c atlas.c util.c layouts.c configurer.c ipc.c windows.c events.c ewmh.c input.c focus.c monitor.c client.c actions.c
 OBJ = ${SRC:.c=.o}
 
 all: atlaswm
@@ -10,10 +10,7 @@ all: atlaswm
 .c.o:
 	${CC} -c ${CFLAGS} $<
 
-${OBJ}: config.h config.mk
-
-config.h:
-	cp config.def.h $@
+${OBJ}: config.mk
 
 atlaswm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
@@ -23,7 +20,7 @@ clean:
 
 dist: clean
 	mkdir -p atlaswm-${VERSION}
-	cp -R LICENSE Makefile README config.def.h config.mk\
+	cp -R LICENSE Makefile README config.mk\
 		atlaswm.1 util.h ${SRC} atlaswm.png transient.c atlaswm-${VERSION}
 	tar -cf atlaswm-${VERSION}.tar atlaswm-${VERSION}
 	gzip atlaswm-${VERSION}.tar

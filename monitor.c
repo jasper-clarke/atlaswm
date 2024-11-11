@@ -34,8 +34,6 @@ Monitor *createMonitor(void) {
   m->workspaceset[0] = m->workspaceset[1] = 1;
   m->masterFactor = cfg.masterFactor;
   m->numMasterWindows = cfg.numMasterWindows;
-  m->showDash = cfg.showDash;
-  m->dashPosTop = cfg.topBar;
   m->layouts[0] = &layouts[0];
   m->layouts[1] = &layouts[1 % LENGTH(layouts)];
   strncpy(m->layoutSymbol, layouts[0].symbol, sizeof m->layoutSymbol);
@@ -52,8 +50,6 @@ void cleanupMonitor(Monitor *mon) {
       ;
     m->next = mon->next;
   }
-  XUnmapWindow(dpy, mon->dashWin);
-  XDestroyWindow(dpy, mon->dashWin);
   free(mon);
 }
 
@@ -96,7 +92,6 @@ int updateMonitorGeometry(void) {
         m->my = m->wy = unique[i].y_org;
         m->mw = m->ww = unique[i].width;
         m->mh = m->wh = unique[i].height;
-        updateDashPosition(m);
       }
     /* removed monitors if n > nn */
     for (i = nn; i < n; i++) {
@@ -124,7 +119,6 @@ int updateMonitorGeometry(void) {
       dirty = 1;
       monitors->mw = monitors->ww = screenWidth;
       monitors->mh = monitors->wh = screenHeight;
-      updateDashPosition(monitors);
     }
   }
   if (dirty) {
@@ -142,8 +136,7 @@ Monitor *findMonitorFromWindow(Window w) {
   if (w == root && getrootptr(&x, &y))
     return getMonitorForArea(x, y, 1, 1);
   for (m = monitors; m; m = m->next)
-    if (w == m->dashWin)
-      return m;
+    ;
   if ((c = findClientFromWindow(w)))
     return c->monitor;
   return selectedMonitor;

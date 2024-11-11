@@ -10,12 +10,12 @@ Config cfg = {
     .outerGaps = 20,
     .innerGaps = 10,
     .borderWidth = 3,
+    .borderActiveColor = "#222222",
+    .borderInactiveColor = "#444444",
     .snapDistance = 0,
     .masterFactor = 0.5,
     .numMasterWindows = 1,
     .lockFullscreen = 1,
-    .showDash = 1,
-    .topBar = 1,
     .focusNewWindows = 1,
     .moveCursorWithFocus = 1,
     .refreshRate = 60,
@@ -25,7 +25,6 @@ static const struct {
   const char *name;
   ActionType action;
 } action_map[] = {{"spawn", ACTION_SPAWN},
-                  {"toggledash", ACTION_TOGGLEDASH},
                   {"reload", ACTION_RELOAD},
                   {"cyclefocus", ACTION_CYCLEFOCUS},
                   {"killclient", ACTION_KILLCLIENT},
@@ -330,22 +329,19 @@ void update_window_manager_state(void) {
 
   // Update monitor properties
   for (m = monitors; m; m = m->next) {
-    // Update bar visibility and position
-    m->showDash = cfg.showDash;
-    m->dashPos = cfg.topBar;
-    updateDashPosition(m);
-    XMoveResizeWindow(dpy, m->dashWin, m->wx, m->dashPos, m->ww, bh);
-
     // Update all clients on this monitor
     for (c = m->clients; c; c = c->next) {
       if (!c->isFullscreen) { // Don't modify fullscreen windows
         // Update border width
         c->borderWidth = cfg.borderWidth;
+        Clr activeBorderColor;
+        drw_clr_create(drw, &activeBorderColor, cfg.borderActiveColor);
+        Clr inactiveBorderColor;
+        drw_clr_create(drw, &inactiveBorderColor, cfg.borderInactiveColor);
         XSetWindowBorder(dpy, c->win,
                          (c == selectedMonitor->active)
-                             ? scheme[SchemeSel][ColBorder].pixel
-                             : scheme[SchemeNorm][ColBorder].pixel);
-
+                             ? activeBorderColor.pixel
+                             : inactiveBorderColor.pixel);
         // Apply border width change
         XWindowChanges wc = {.x = c->x,
                              .y = c->y,
@@ -361,9 +357,6 @@ void update_window_manager_state(void) {
     m->masterFactor = cfg.masterFactor;
     m->numMasterWindows = cfg.numMasterWindows;
   }
-
-  // Force a redraw of bars
-  drawDashboards();
 
   // Rearrange all monitors to apply gap changes and new layouts
   arrange(NULL);
@@ -429,21 +422,6 @@ int load_config(const char *config_path) {
       safe_strcpy(cfg.borderInactiveColor, inactive.u.s,
                   sizeof(cfg.borderInactiveColor));
       free(inactive.u.s);
-    }
-  }
-
-  // Dash configuration
-  toml_table_t *dash = toml_table_in(conf, "dashboard");
-  if (dash) {
-    toml_datum_t show = toml_bool_in(dash, "show");
-    if (show.ok) {
-      cfg.showDash = show.u.b;
-    }
-
-    toml_datum_t top = toml_string_in(dash, "position");
-    if (top.ok) {
-      cfg.topBar = (strcmp(top.u.s, "top") == 0);
-      free(top.u.s);
     }
   }
 

@@ -12,10 +12,8 @@
  * Each child of the root window is called a client, except windows which have
  * set the override_redirect flag. Clients are organized in a linked client
  * list on each monitor, the focus history is remembered through a stack list
- * on each monitor. Each client contains a bit array to indicate the tags of a
- * client.
- *
- * Keys and tagging rules are organized as arrays and defined in config.h.
+ * on each monitor. Each client contains a bit array to indicate the workspaces
+ * of a client.
  *
  * To understand everything else, start reading main().
  */
@@ -54,7 +52,6 @@ void (*handler[LASTEvent])(XEvent *) = {
     [ConfigureNotify] = handleWindowConfigChange,
     [DestroyNotify] = handleWindowDestroy,
     [EnterNotify] = handleMouseEnter,
-    [Expose] = handleExpose,
     [FocusIn] = handleFocusIn,
     [KeyPress] = handleKeypress,
     [MappingNotify] = handleKeymappingChange,
@@ -66,32 +63,14 @@ void (*handler[LASTEvent])(XEvent *) = {
 /* external variables */
 Drw *drw;
 Atom wmatom[WMLast], netatom[NetLast];
-Clr **scheme;
 Cur *cursor[CurLast];
 Display *dpy;
 Monitor *monitors, *selectedMonitor;
 Window root, wmcheckwin;
 int screenWidth, screenHeight; /* X display screen geometry width, height */
-int bh;                        /* bar height */
 unsigned int numlockmask = 0;
-int lrpad; /* sum of left and right padding for text */
-char stext[256];
 int screen;
 int running = 1;
-
-/* HACK: Need to implement TOML config for these */
-static const char *fonts[] = {"Inter:size=12"};
-static const char col_gray1[] = "#222222";
-static const char col_gray2[] = "#444444";
-static const char col_gray3[] = "#bbbbbb";
-static const char col_gray4[] = "#eeeeee";
-static const char col_cyan[] = "#005577";
-static const char *colors[][3] = {
-    /*               fg         bg         border   */
-    [SchemeNorm] = {col_gray3, col_gray1, col_gray2},
-    [SchemeSel] = {col_gray4, col_cyan, col_cyan},
-};
-/* HACK: End of hack*/
 
 /* function implementations */
 void checkForOtherWM(void) {
@@ -119,9 +98,6 @@ void cleanup(void) {
     cleanupMonitor(monitors);
   for (i = 0; i < CurLast; i++)
     drw_cur_free(drw, cursor[i]);
-  for (i = 0; i < LENGTH(colors); i++)
-    free(scheme[i]);
-  free(scheme);
   XDestroyWindow(dpy, wmcheckwin);
   drw_free(drw);
   XSync(dpy, False);
@@ -256,7 +232,6 @@ void startupPrograms() {
 }
 
 void setup(void) {
-  int i;
   XSetWindowAttributes wa;
   struct sigaction sa;
 
@@ -291,10 +266,6 @@ void setup(void) {
   screenHeight = DisplayHeight(dpy, screen);
   root = RootWindow(dpy, screen);
   drw = drw_create(dpy, screen, root, screenWidth, screenHeight);
-  if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
-    LOG_FATAL("No fonts could be loaded");
-  lrpad = drw->fonts->h;
-  bh = drw->fonts->h + 2;
   updateMonitorGeometry();
   /* init atoms */
   wmatom[WMProtocols] = XInternAtom(dpy, "WM_PROTOCOLS", False);
@@ -316,14 +287,7 @@ void setup(void) {
   cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
   cursor[CurResize] = drw_cur_create(drw, XC_sizing);
   cursor[CurMove] = drw_cur_create(drw, XC_fleur);
-  /* init appearance */
-  scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
-  for (i = 0; i < LENGTH(colors); i++)
-    scheme[i] = drw_scm_create(drw, colors[i], 3);
-  /* init bars */
-  updateDashboards();
   setup_ipc(dpy);
-  updatestatus();
   Window check = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
   XChangeProperty(dpy, check, netatom[NetWMName], XA_STRING, 8, PropModeReplace,
                   (unsigned char *)"AtlasWM", 7);

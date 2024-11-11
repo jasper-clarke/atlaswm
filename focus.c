@@ -16,21 +16,24 @@ void focus(Client *c) {
     detachWindowFromStack(c);
     attachWindowToStack(c);
     registerMouseButtons(c, 1);
-    XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
+    Clr borderColor;
+    drw_clr_create(drw, &borderColor, cfg.borderActiveColor);
+    XSetWindowBorder(dpy, c->win, borderColor.pixel);
     setfocus(c);
   } else {
     XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
     XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
   }
   selectedMonitor->active = c;
-  drawDashboards();
 }
 
 void unfocus(Client *c, int setfocus) {
   if (!c)
     return;
   registerMouseButtons(c, 0);
-  XSetWindowBorder(dpy, c->win, scheme[SchemeNorm][ColBorder].pixel);
+  Clr borderColor;
+  drw_clr_create(drw, &borderColor, cfg.borderInactiveColor);
+  XSetWindowBorder(dpy, c->win, borderColor.pixel);
   if (setfocus) {
     XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
     XDeleteProperty(dpy, root, netatom[NetActiveWindow]);

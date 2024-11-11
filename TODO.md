@@ -1,5 +1,6 @@
 # TODO List
 
 - Ensure that the new window center will be the new position of the recalculated window
+- Fix dwindle layout resizing
 
-- Add all configuration options to configurer
+- Implement TOML for all configuration options

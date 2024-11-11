@@ -31,10 +31,6 @@ void executeKeybinding(Keybinding *kb) {
     killclient(&arg);
     break;
 
-  case ACTION_TOGGLEDASH:
-    toggleDash(&arg);
-    break;
-
   case ACTION_RELOAD:
     reload(&arg);
     break;

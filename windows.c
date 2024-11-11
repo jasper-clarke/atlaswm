@@ -38,7 +38,6 @@ void manage(Window w, XWindowAttributes *wa) {
   c->horizontalRatio = 0.5;
   c->verticalRatio = 0.5;
 
-  updateWindowTitle(c);
   if (XGetTransientForHint(dpy, w, &trans) &&
       (t = findClientFromWindow(trans))) {
     c->monitor = t->monitor;
@@ -58,7 +57,9 @@ void manage(Window w, XWindowAttributes *wa) {
 
   wc.border_width = c->borderWidth;
   XConfigureWindow(dpy, w, CWBorderWidth, &wc);
-  XSetWindowBorder(dpy, w, scheme[SchemeNorm][ColBorder].pixel);
+  Clr borderColor;
+  drw_clr_create(drw, &borderColor, cfg.borderInactiveColor);
+  XSetWindowBorder(dpy, w, borderColor.pixel);
   configure(c); /* propagates border_width, if size doesn't change */
   updateWindowTypeProps(c);
   updateWindowSizeHints(c);
@@ -282,10 +283,6 @@ int applyWindowSizeConstraints(Client *c, int *x, int *y, int *w, int *h,
     if (*y + *h + 2 * c->borderWidth <= m->wy)
       *y = m->wy;
   }
-  if (*h < bh)
-    *h = bh;
-  if (*w < bh)
-    *w = bh;
   if (c->isFloating ||
       !c->monitor->layouts[c->monitor->selectedLayout]->arrange) {
     if (!c->hintsvalid)

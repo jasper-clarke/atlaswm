@@ -8,7 +8,6 @@
 typedef struct Monitor Monitor;
 typedef struct Client Client;
 typedef struct Drw Drw;
-typedef struct Fnt Fnt;
 
 /* Enumerations */
 // Cursor types
@@ -17,19 +16,6 @@ enum {
   CurResize, // Cursor when resizing windows
   CurMove,   // Cursor when moving windows
   CurLast    // Marker for last cursor type
-};
-
-// Color scheme indices
-enum {
-  SchemeNorm, // Normal color scheme
-  SchemeSel   // Selected color scheme
-};
-
-// Color indices within schemes
-enum {
-  ColFg,    // Foreground color
-  ColBg,    // Background color
-  ColBorder // Border color
 };
 
 // EWMH (Extended Window Manager Hints) atoms
@@ -51,17 +37,12 @@ enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };
 
 // Click locations for event handling
 enum {
-  ClkTagBar,     // Tag bar area
-  ClkLtSymbol,   // Layout symbol
-  ClkStatusText, // Status text area
-  ClkWinTitle,   // Window title area
-  ClkClientWin,  // Client window
-  ClkRootWin,    // Root window
-  ClkLast        // Marker for last click type
+  ClkClientWin, // Client window
+  ClkRootWin,   // Root window
+  ClkLast       // Marker for last click type
 };
 
 /* Data Structures */
-
 // Generic argument union for flexible parameter passing
 typedef union {
   int i;           // Integer value
@@ -94,7 +75,6 @@ typedef struct {
 
 typedef enum {
   ACTION_SPAWN,
-  ACTION_TOGGLEDASH,
   ACTION_RELOAD,
   ACTION_CYCLEFOCUS,
   ACTION_KILLCLIENT,
@@ -138,15 +118,6 @@ typedef struct {
   Cursor cursor; // X11 cursor
 } Cur;
 
-// Font structure
-struct Fnt {
-  Display *dpy;       // Display connection
-  unsigned int h;     // Font height
-  XftFont *xfont;     // Xft font
-  FcPattern *pattern; // Font pattern
-  struct Fnt *next;   // Next font in chain
-};
-
 // Color type definition
 typedef XftColor Clr;
 
@@ -158,8 +129,6 @@ struct Drw {
   Window root;       // Root window
   Drawable drawable; // Drawing surface
   GC gc;             // Graphics context
-  Clr *scheme;       // Color scheme
-  Fnt *fonts;        // Font set
 };
 
 // Client (window) structure
@@ -199,57 +168,25 @@ struct Monitor {
   float masterFactor;              // Size of master area
   int numMasterWindows;            // Number of windows in master area
   int num;                         // Monitor number
-  int dashPos;                     // Bar y position
   int mx, my, mw, mh;              // Monitor geometry
   int wx, wy, ww, wh;              // Window area geometry
   unsigned int selectedWorkspaces; // Current workspace selection
   unsigned int selectedLayout;     // Current layout
   unsigned int workspaceset[2];    // Workspace sets
-  int showDash;                    // Bar visibility
-  int dashPosTop;                  // Bar position
   Client *clients;                 // List of clients
   Client *active;                  // Selected client
   Client *stack;                   // Client stack
   Monitor *next;                   // Next monitor
-  Window dashWin;                  // Bar window
   const Layout *layouts[2];        // Available layouts
 };
 
 /* Drawing Functions */
-// Drawable creation and management
 Drw *drw_create(Display *dpy, int screen, Window win, unsigned int w,
                 unsigned int h);
-void drw_resize(Drw *drw, unsigned int w, unsigned int h);
 void drw_free(Drw *drw);
-
-// Font management
-Fnt *drw_fontset_create(Drw *drw, const char *fonts[], size_t fontcount);
-void drw_fontset_free(Fnt *set);
-unsigned int drw_fontset_getwidth(Drw *drw, const char *text);
-unsigned int drw_fontset_getwidth_clamp(Drw *drw, const char *text,
-                                        unsigned int n);
-void drw_font_getexts(Fnt *font, const char *text, unsigned int len,
-                      unsigned int *w, unsigned int *h);
-
-// Color management
 void drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
-Clr *drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount);
-
-// Cursor management
 Cur *drw_cur_create(Drw *drw, int shape);
 void drw_cur_free(Drw *drw, Cur *cursor);
-
-// Drawing context manipulation
-void drw_setfontset(Drw *drw, Fnt *set);
-void drw_setscheme(Drw *drw, Clr *scm);
-
-// Basic drawing operations
-void drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h,
-              int filled, int invert);
-int drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h,
-             unsigned int lpad, const char *text, int invert);
-void drw_map(Drw *drw, Window win, int x, int y, unsigned int w,
-             unsigned int h);
 
 /* Utility Macros */
 #define HEIGHT(X) ((X)->h + 2 * (X)->borderWidth)
@@ -332,7 +269,6 @@ void handleClientMessage(XEvent *e);
 void handleConfigureRequest(XEvent *e);
 void handleWindowDestroy(XEvent *e);
 void handleMouseEnter(XEvent *e);
-void handleExpose(XEvent *e);
 void handleFocusIn(XEvent *e);
 void handleMouseMotion(XEvent *e);
 void handlePropertyChange(XEvent *e);
@@ -341,14 +277,6 @@ void handleKeymappingChange(XEvent *e);
 void handleWindowMappingRequest(XEvent *e);
 void handleKeypress(XEvent *e);
 void handleWindowConfigChange(XEvent *e);
-
-// Dashboard Functions
-void drawDash(Monitor *m);
-void drawDashboards(void);
-void updateDashPosition(Monitor *m);
-void updateDashboards(void);
-void updatestatus(void);
-void toggleDash(const Arg *arg);
 
 // Layout Functions
 void arrange(Monitor *m);
@@ -406,15 +334,11 @@ extern Display *dpy;
 extern Monitor *monitors;
 extern Monitor *selectedMonitor;
 extern Drw *drw;
-extern Clr **scheme;
 extern Cur *cursor[CurLast];
 extern Window root;
 extern Atom wmatom[WMLast], netatom[NetLast];
-extern int bh;
 extern unsigned int numlockmask;
 extern int screenWidth, screenHeight;
-extern int lrpad;
-extern char stext[256];
 extern int screen;
 extern const Layout layouts[];
 extern void (*handler[LASTEvent])(XEvent *);

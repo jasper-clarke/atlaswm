@@ -15,10 +15,6 @@ width = 3
 [layout]
 master_count = 2
 
-[dashboard]
-position = "top"
-show = true
-
 [performance]
 refresh_rate = 144
 
