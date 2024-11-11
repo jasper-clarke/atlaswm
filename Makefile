@@ -30,12 +30,12 @@ install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin
 	cp -f atlaswm ${DESTDIR}${PREFIX}/bin
 	chmod 755 ${DESTDIR}${PREFIX}/bin/atlaswm
-	mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	sed "s/VERSION/${VERSION}/g" < atlaswm.1 > ${DESTDIR}${MANPREFIX}/man1/atlaswm.1
-	chmod 644 ${DESTDIR}${MANPREFIX}/man1/atlaswm.1
+	# mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	# sed "s/VERSION/${VERSION}/g" < atlaswm.1 > ${DESTDIR}${MANPREFIX}/man1/atlaswm.1
+	# chmod 644 ${DESTDIR}${MANPREFIX}/man1/atlaswm.1
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/atlaswm\
-		${DESTDIR}${MANPREFIX}/man1/atlaswm.1
+	rm -f ${DESTDIR}${PREFIX}/bin/atlaswm
+		# ${DESTDIR}${MANPREFIX}/man1/atlaswm.1
 
 .PHONY: all clean dist install uninstall
