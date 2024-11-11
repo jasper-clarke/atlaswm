@@ -29,6 +29,10 @@ enum {
   NetWMWindowType,
   NetWMWindowTypeDialog,
   NetClientList,
+  NetDesktopNames,
+  NetDesktopViewport,
+  NetNumberOfDesktops,
+  NetCurrentDesktop,
   NetLast
 };
 
@@ -325,9 +329,11 @@ int xerror(Display *dpy, XErrorEvent *ee);
 int xerrordummy(Display *dpy, XErrorEvent *ee);
 int xerrorstart(Display *dpy, XErrorEvent *ee);
 
-/* EWMH Functions */
-void ewmh_update_client_list(void);
-void ewmh_update_active_window(void);
+void setCurrentDesktop(void);
+void setDesktopNames(void);
+void setNumDesktops(void);
+void setViewport(void);
+void updateCurrentDesktop(void);
 
 /* External Variables */
 extern Display *dpy;

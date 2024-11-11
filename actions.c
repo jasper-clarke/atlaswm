@@ -140,6 +140,7 @@ void toggletag(const Arg *arg) {
     focus(NULL);
     arrange(selectedMonitor);
   }
+  updateCurrentDesktop();
 }
 
 void toggleview(const Arg *arg) {
@@ -153,6 +154,7 @@ void toggleview(const Arg *arg) {
     focus(NULL);
     arrange(selectedMonitor);
   }
+  updateCurrentDesktop();
 }
 
 void view(const Arg *arg) {
@@ -165,6 +167,7 @@ void view(const Arg *arg) {
         arg->ui & WORKSPACEMASK;
   focus(NULL);
   arrange(selectedMonitor);
+  updateCurrentDesktop();
 }
 
 void zoom(const Arg *arg) {

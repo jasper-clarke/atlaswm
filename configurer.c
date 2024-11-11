@@ -1,4 +1,5 @@
 #include "configurer.h" // Includes "atlas.h"
+#include "atlas.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -357,6 +358,11 @@ void update_window_manager_state(void) {
     m->masterFactor = cfg.masterFactor;
     m->numMasterWindows = cfg.numMasterWindows;
   }
+
+  setNumDesktops();
+  setCurrentDesktop();
+  setDesktopNames();
+  setViewport();
 
   // Rearrange all monitors to apply gap changes and new layouts
   arrange(NULL);

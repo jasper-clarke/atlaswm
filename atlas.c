@@ -234,6 +234,7 @@ void startupPrograms() {
 void setup(void) {
   XSetWindowAttributes wa;
   struct sigaction sa;
+  Atom utf8string;
 
   // Load configuration
   char config_path[256];
@@ -283,14 +284,21 @@ void setup(void) {
   netatom[NetWMWindowTypeDialog] =
       XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
   netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+  netatom[NetDesktopViewport] =
+      XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
+  netatom[NetNumberOfDesktops] =
+      XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
+  netatom[NetCurrentDesktop] = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
+  netatom[NetDesktopNames] = XInternAtom(dpy, "_NET_DESKTOP_NAMES", False);
   /* init cursors */
   cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
   cursor[CurResize] = drw_cur_create(drw, XC_sizing);
   cursor[CurMove] = drw_cur_create(drw, XC_fleur);
   setup_ipc(dpy);
   Window check = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-  XChangeProperty(dpy, check, netatom[NetWMName], XA_STRING, 8, PropModeReplace,
-                  (unsigned char *)"AtlasWM", 7);
+  utf8string = XInternAtom(dpy, "UTF8_STRING", False);
+  XChangeProperty(dpy, check, netatom[NetWMName], utf8string, 8,
+                  PropModeReplace, (unsigned char *)"AtlasWM", 7);
   XChangeProperty(dpy, check, netatom[NetWMCheck], XA_WINDOW, 32,
                   PropModeReplace, (unsigned char *)&check, 1);
   XChangeProperty(dpy, root, netatom[NetWMCheck], XA_WINDOW, 32,
@@ -298,6 +306,10 @@ void setup(void) {
 
   XChangeProperty(dpy, root, netatom[NetSupported], XA_ATOM, 32,
                   PropModeReplace, (unsigned char *)netatom, NetLast);
+  setNumDesktops();
+  setCurrentDesktop();
+  setDesktopNames();
+  setViewport();
   XDeleteProperty(dpy, root, netatom[NetClientList]);
   /* select events */
   wa.cursor = cursor[CurNormal]->cursor;
@@ -344,9 +356,15 @@ int xerror(Display *dpy, XErrorEvent *ee) {
       (ee->request_code == X_GrabKey && ee->error_code == BadAccess) ||
       (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
     return 0;
-  LOG_ERROR("Xerror: request_code=%d, error_code=%d", ee->request_code,
-            ee->error_code);
-  return xerrorxlib(dpy, ee); /* may call exit */
+
+  char error_text[1024];
+  XGetErrorText(dpy, ee->error_code, error_text, sizeof(error_text));
+
+  LOG_ERROR("X Error: request=%d error=%d (%s) resourceid=%lu serial=%lu",
+            ee->request_code, ee->error_code, error_text, ee->resourceid,
+            ee->serial);
+
+  return xerrorxlib(dpy, ee);
 }
 
 int xerrordummy(Display *dpy, XErrorEvent *ee) { return 0; }

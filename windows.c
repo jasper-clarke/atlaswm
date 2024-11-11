@@ -515,3 +515,46 @@ int gettextprop(Window w, Atom atom, char *text, unsigned int size) {
   XFree(name.value);
   return 1;
 }
+
+void setCurrentDesktop(void) {
+  long data[] = {0};
+  XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32,
+                  PropModeReplace, (unsigned char *)data, 1);
+}
+void setDesktopNames(void) {
+  XTextProperty text;
+  // Create list of workspace names
+  char **list = ecalloc(cfg.workspaceCount, sizeof(char *));
+  for (size_t i = 0; i < cfg.workspaceCount; i++) {
+    list[i] = strdup(cfg.workspaces[i].name);
+  }
+
+  // Convert list to text property
+  Xutf8TextListToTextProperty(dpy, list, cfg.workspaceCount, XUTF8StringStyle,
+                              &text);
+  XSetTextProperty(dpy, root, &text, netatom[NetDesktopNames]);
+}
+
+void setNumDesktops(void) {
+  long data[] = {cfg.workspaceCount};
+  XChangeProperty(dpy, root, netatom[NetNumberOfDesktops], XA_CARDINAL, 32,
+                  PropModeReplace, (unsigned char *)data, 1);
+}
+
+void setViewport(void) {
+  long data[] = {0, 0};
+  XChangeProperty(dpy, root, netatom[NetDesktopViewport], XA_CARDINAL, 32,
+                  PropModeReplace, (unsigned char *)data, 2);
+}
+
+void updateCurrentDesktop(void) {
+  long rawdata[] = {
+      selectedMonitor->workspaceset[selectedMonitor->selectedWorkspaces]};
+  int i = 0;
+  while (*rawdata >> (i + 1)) {
+    i++;
+  }
+  long data[] = {i};
+  XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32,
+                  PropModeReplace, (unsigned char *)data, 1);
+}
