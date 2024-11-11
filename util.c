@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
+#include "configurer.h"
 #include "util.h"
 
 // ANSI color codes for different log levels
@@ -53,7 +55,17 @@ static void init_log_file() {
   }
 
   char log_path[512];
+  char old_log_path[512];
   snprintf(log_path, sizeof(log_path), "%s/.atlaslogs", home);
+  snprintf(old_log_path, sizeof(old_log_path), "%s/.atlaslogsold", home);
+
+  // If the log file exists, rename it to .atlaslogsold
+  if (access(log_path, F_OK) == 0) {
+    // Remove old backup if it exists
+    unlink(old_log_path);
+    // Rename current log to old
+    rename(log_path, old_log_path);
+  }
 
   log_file = fopen(log_path, "a");
   if (log_file == NULL) {
@@ -75,6 +87,22 @@ void set_log_level(LogLevel level) {
 void log_message(LogLevel level, const char *file, int line, const char *fmt,
                  ...) {
   if (level < current_log_level)
+    return;
+
+  // Convert between string and log levels
+  LogLevel levelFrom;
+  if (strcmp(cfg.logLevel, "debug") == 0) {
+    levelFrom = LOG_DEBUG;
+  } else if (strcmp(cfg.logLevel, "info") == 0) {
+    levelFrom = LOG_INFO;
+  } else if (strcmp(cfg.logLevel, "warning") == 0) {
+    levelFrom = LOG_WARNING;
+  } else {
+    levelFrom = LOG_INFO;
+    return;
+  }
+
+  if (level < levelFrom)
     return;
 
   // Initialize log file if not already done

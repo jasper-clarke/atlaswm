@@ -36,6 +36,7 @@ typedef struct {
   // General
   StartupProgram *startup_progs;
   int startup_prog_count;
+  char *logLevel;
 } Config;
 
 // Global configuration instance

@@ -19,6 +19,7 @@ Config cfg = {
     .focusNewWindows = 1,
     .moveCursorWithFocus = 1,
     .refreshRate = 60,
+    .logLevel = "info",
 };
 
 static const struct {
@@ -115,7 +116,7 @@ void parse_keybinding(const char *key_str, toml_table_t *binding_table) {
     return;
   }
 
-  LOG_INFO("Action: %s", action.u.s);
+  LOG_DEBUG("Action: %s", action.u.s);
 
   // Create the keybinding
   Keybinding *kb = &cfg.keybindings[cfg.keybindingCount];
@@ -141,7 +142,7 @@ void parse_keybinding(const char *key_str, toml_table_t *binding_table) {
   free(action.u.s);
   cfg.keybindingCount++;
 
-  LOG_INFO("Added keybinding: %s -> %s", key_str, kb->description);
+  LOG_DEBUG("Added keybinding: %s -> %s", key_str, kb->description);
 }
 
 void load_keybindings(toml_table_t *conf) {
@@ -463,6 +464,19 @@ int load_config(const char *config_path) {
     toml_datum_t refresh_rate = toml_int_in(performance, "refresh_rate");
     if (refresh_rate.ok) {
       cfg.refreshRate = refresh_rate.u.i;
+    }
+  }
+
+  toml_datum_t log_level = toml_string_in(conf, "log_level");
+  if (log_level.ok) {
+    // If log_level matches any avaliable log level, use it
+    if (strcmp(log_level.u.s, "debug") == 0 ||
+        strcmp(log_level.u.s, "info") == 0 ||
+        strcmp(log_level.u.s, "warning") == 0) {
+      cfg.logLevel = strdup(log_level.u.s);
+      free(log_level.u.s);
+    } else {
+      LOG_WARN("Invalid log level: %s", log_level.u.s);
     }
   }
 

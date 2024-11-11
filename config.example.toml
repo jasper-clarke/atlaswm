@@ -1,4 +1,5 @@
 startup_progs = ["kitty", "nitrogen --restore", "picom --daemon"]
+log_level = "info"
 workspaces = [
   "web",
   "code",
