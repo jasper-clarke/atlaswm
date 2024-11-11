@@ -15,7 +15,6 @@ Config cfg = {
     .borderInactiveColor = "#444444",
     .snapDistance = 0,
     .masterFactor = 0.5,
-    .numMasterWindows = 1,
     .lockFullscreen = 1,
     .focusNewWindows = 1,
     .moveCursorWithFocus = 1,
@@ -356,7 +355,6 @@ void update_window_manager_state(void) {
 
     // Update master factor and number of master windows
     m->masterFactor = cfg.masterFactor;
-    m->numMasterWindows = cfg.numMasterWindows;
   }
 
   setNumDesktops();
@@ -437,11 +435,6 @@ int load_config(const char *config_path) {
     toml_datum_t master_factor = toml_double_in(layout, "master_factor");
     if (master_factor.ok) {
       cfg.masterFactor = master_factor.u.d;
-    }
-
-    toml_datum_t master_count = toml_int_in(layout, "master_count");
-    if (master_count.ok) {
-      cfg.numMasterWindows = master_count.u.i;
     }
   }
 

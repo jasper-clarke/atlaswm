@@ -13,7 +13,7 @@ inner = 20
 width = 3
 
 [layout]
-master_count = 2
+master_factor = 0.5
 
 [performance]
 refresh_rate = 144

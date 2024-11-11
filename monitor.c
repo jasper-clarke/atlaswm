@@ -10,10 +10,9 @@
 #endif /* XINERAMA */
 
 const Layout layouts[] = {
-    {"dwindlegaps", dwindlegaps},
+    {"dwindle", dwindlegaps},
     {"floating", NULL},
     {"full", monocle},
-    {"tile", tile},
 };
 
 #ifdef XINERAMA
@@ -33,7 +32,6 @@ Monitor *createMonitor(void) {
   m = ecalloc(1, sizeof(Monitor));
   m->workspaceset[0] = m->workspaceset[1] = 1;
   m->masterFactor = cfg.masterFactor;
-  m->numMasterWindows = cfg.numMasterWindows;
   m->layouts[0] = &layouts[0];
   m->layouts[1] = &layouts[1 % LENGTH(layouts)];
   strncpy(m->layoutSymbol, layouts[0].symbol, sizeof m->layoutSymbol);

@@ -170,7 +170,6 @@ typedef struct {
 struct Monitor {
   char layoutSymbol[16];           // Current layout symbol
   float masterFactor;              // Size of master area
-  int numMasterWindows;            // Number of windows in master area
   int num;                         // Monitor number
   int mx, my, mw, mh;              // Monitor geometry
   int wx, wy, ww, wh;              // Window area geometry
@@ -287,10 +286,7 @@ void arrange(Monitor *m);
 void arrangeMonitor(Monitor *m);
 void setlayout(const Arg *arg);
 void setMasterRatio(const Arg *arg);
-void incNumMasterWindows(const Arg *arg);
-void tile(Monitor *m);
 void monocle(Monitor *m);
-void dwindle(Monitor *m);
 void dwindlegaps(Monitor *m);
 void restack(Monitor *m);
 

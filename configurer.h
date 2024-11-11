@@ -16,7 +16,6 @@ typedef struct {
   // Layout
   int snapDistance;
   float masterFactor;
-  int numMasterWindows;
   int lockFullscreen;
 
   // Window
