@@ -2,7 +2,7 @@
 
 <img src="atlaswm.png" alt="AtlasWM Banner" width="30%">
 
-AtlasWM is a dynamic, customizable X11 window manager written in C, designed with flexibility and efficiency in mind. It provides a modern approach to window management while maintaining a lightweight footprint.
+AtlasWM is a dynamic, customizable X11 window manager written in C, designed with flexibility and efficiency in mind. It provides a modern approach to window management while maintaining a lightweight footprint. **(Not even 10MB of RAM and less than 0.1% of CPU!)**
 
 ## Features
 
@@ -23,20 +23,14 @@ AtlasWM is a dynamic, customizable X11 window manager written in C, designed wit
 - Xlib (X11)
 - Xft
 - Xinerama (optional)
-- [tomlc99](https://github.com/cktan/tomlc99)
-- fontconfig
 
 For Debian/Ubuntu:
-
-_tomlc99 must be built from source_
 
 ```bash
 sudo apt install libx11-dev libxft-dev libxinerama-dev libfontconfig1-dev
 ```
 
 For Arch Linux:
-
-_tomlc99 must be built from source_
 
 ```bash
 sudo pacman -S libx11 libxft libxinerama fontconfig

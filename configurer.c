@@ -1,10 +1,10 @@
 #include "configurer.h" // Includes "atlas.h"
 #include "atlas.h"
+#include "toml.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <toml.h>
 
 // Global configuration instance
 Config cfg = {

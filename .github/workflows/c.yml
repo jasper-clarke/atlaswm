@@ -17,20 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xorg-dev libx11-dev libxft-dev libxinerama-dev git
 
-      - name: Clone and install tomlc99
-        run: |
-          git clone https://github.com/cktan/tomlc99.git
-          cd tomlc99
-          make
-          sudo make install
-          cd ..
-          rm -rf tomlc99
-
-      - name: Check tomlc99 install
-        run: |
-          echo '#include <toml.h>' | gcc -xc -c -o /dev/null - && echo "tomlc99 installed successfully"
-
       - name: Build AtlasWM
-        run: make atlaswm
+        run: make
       - name: Clean
         run: make clean
