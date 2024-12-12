@@ -1,5 +1,5 @@
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include <X11/Xatom.h>
 
 void focus(Client *c) {
@@ -17,12 +17,12 @@ void focus(Client *c) {
     attachWindowToStack(c);
     registerMouseButtons(c, 1);
     Clr borderColor;
-    drw_clr_create(drw, &borderColor, cfg.borderActiveColor);
-    XSetWindowBorder(dpy, c->win, borderColor.pixel);
+    drw_clr_create(drawContext, &borderColor, cfg.borderActiveColor);
+    XSetWindowBorder(display, c->win, borderColor.pixel);
     setfocus(c);
   } else {
-    XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-    XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
+    XSetInputFocus(display, root, RevertToPointerRoot, CurrentTime);
+    XDeleteProperty(display, root, netAtoms[NET_ACTIVE_WINDOW]);
   }
   selectedMonitor->active = c;
 }
@@ -32,11 +32,11 @@ void unfocus(Client *c, int setfocus) {
     return;
   registerMouseButtons(c, 0);
   Clr borderColor;
-  drw_clr_create(drw, &borderColor, cfg.borderInactiveColor);
-  XSetWindowBorder(dpy, c->win, borderColor.pixel);
+  drw_clr_create(drawContext, &borderColor, cfg.borderInactiveColor);
+  XSetWindowBorder(display, c->win, borderColor.pixel);
   if (setfocus) {
-    XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-    XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
+    XSetInputFocus(display, root, RevertToPointerRoot, CurrentTime);
+    XDeleteProperty(display, root, netAtoms[NET_ACTIVE_WINDOW]);
   }
 }
 
@@ -84,11 +84,11 @@ void focusstack(const Arg *arg) {
 
 void setfocus(Client *c) {
   if (!c->neverFocus) {
-    XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
-    XChangeProperty(dpy, root, netatom[NetActiveWindow], XA_WINDOW, 32,
+    XSetInputFocus(display, c->win, RevertToPointerRoot, CurrentTime);
+    XChangeProperty(display, root, netAtoms[NET_ACTIVE_WINDOW], XA_WINDOW, 32,
                     PropModeReplace, (unsigned char *)&(c->win), 1);
   }
-  sendevent(c, wmatom[WMTakeFocus]);
+  sendevent(c, wmAtoms[WM_TAKE_FOCUS]);
 }
 
 void moveCursorToClientCenter(Client *c) {
@@ -100,6 +100,6 @@ void moveCursorToClientCenter(Client *c) {
   int y = c->y + (c->h / 2);
 
   // Move cursor to window center
-  XWarpPointer(dpy, None, root, 0, 0, 0, 0, x, y);
-  XFlush(dpy);
+  XWarpPointer(display, None, root, 0, 0, 0, 0, x, y);
+  XFlush(display);
 }

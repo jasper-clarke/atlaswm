@@ -2,7 +2,7 @@
 // "How should this xserver event be handled?"
 
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include "ipc.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -13,10 +13,9 @@
 #define MODKEY Mod4Mask
 
 static const Button buttons[] = {
-    /* click                event mask      button          function argument */
-    {ClkClientWin, MODKEY, Button1, moveWindow, {0}},
-    {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
-    {ClkClientWin, MODKEY, Button3, resizeWindow, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button1, moveWindow, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button2, toggleWindowFloating, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button3, resizeWindow, {0}},
 };
 
 void handleMouseButtonPress(XEvent *e) {
@@ -26,7 +25,7 @@ void handleMouseButtonPress(XEvent *e) {
   Monitor *m;
   XButtonPressedEvent *ev = &e->xbutton;
 
-  click = ClkRootWin;
+  click = CLICK_ROOT_WINDOW;
   /* focus monitor if necessary */
   if ((m = findMonitorFromWindow(ev->window)) && m != selectedMonitor) {
     unfocus(selectedMonitor->active, 1);
@@ -36,8 +35,8 @@ void handleMouseButtonPress(XEvent *e) {
   if ((c = findClientFromWindow(ev->window))) {
     focus(c);
     restack(selectedMonitor);
-    XAllowEvents(dpy, ReplayPointer, CurrentTime);
-    click = ClkClientWin;
+    XAllowEvents(display, ReplayPointer, CurrentTime);
+    click = CLICK_CLIENT_WINDOW;
   }
   for (i = 0; i < LENGTH(buttons); i++)
     if (click == buttons[i].click && buttons[i].func &&
@@ -52,14 +51,14 @@ void handleClientMessage(XEvent *e) {
 
   if (!c)
     return;
-  if (cme->message_type == netatom[NetWMState]) {
-    if (cme->data.l[1] == netatom[NetWMFullscreen] ||
-        cme->data.l[2] == netatom[NetWMFullscreen])
+  if (cme->message_type == netAtoms[NET_WM_STATE]) {
+    if (cme->data.l[1] == netAtoms[NET_WM_FULLSCREEN] ||
+        cme->data.l[2] == netAtoms[NET_WM_FULLSCREEN])
       setWindowFullscreen(c,
                           (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
                            || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ &&
                                !c->isFullscreen)));
-  } else if (cme->message_type == netatom[NetActiveWindow]) {
+  } else if (cme->message_type == netAtoms[NET_ACTIVE_WINDOW]) {
     if (c != selectedMonitor->active && !c->isUrgent)
       setWindowUrgent(c, 1);
   }
@@ -102,7 +101,7 @@ void handleConfigureRequest(XEvent *e) {
           !(ev->value_mask & (CWWidth | CWHeight)))
         configure(c);
       if (ISVISIBLE(c))
-        XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+        XMoveResizeWindow(display, c->win, c->x, c->y, c->w, c->h);
     } else
       configure(c);
   } else {
@@ -113,9 +112,9 @@ void handleConfigureRequest(XEvent *e) {
     wc.border_width = ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
-    XConfigureWindow(dpy, ev->window, ev->value_mask, &wc);
+    XConfigureWindow(display, ev->window, ev->value_mask, &wc);
   }
-  XSync(dpy, False);
+  XSync(display, False);
 }
 
 void handleWindowDestroy(XEvent *e) {
@@ -178,7 +177,7 @@ void handlePropertyChange(XEvent *e) {
     unsigned long nitems, bytes_after;
     unsigned char *data = NULL;
 
-    if (XGetWindowProperty(dpy, root, command_atom, 0, 1, True, XA_CARDINAL,
+    if (XGetWindowProperty(display, root, command_atom, 0, 1, True, XA_CARDINAL,
                            &type, &format, &nitems, &bytes_after,
                            &data) == Success) {
       if (data) {
@@ -194,7 +193,7 @@ void handlePropertyChange(XEvent *e) {
     default:
       break;
     case XA_WM_TRANSIENT_FOR:
-      if (!c->isFloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
+      if (!c->isFloating && (XGetTransientForHint(display, c->win, &trans)) &&
           (c->isFloating = (findClientFromWindow(trans)) != NULL))
         arrange(c->monitor);
       break;
@@ -205,10 +204,10 @@ void handlePropertyChange(XEvent *e) {
       updateWindowManagerHints(c);
       break;
     }
-    if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
+    if (ev->atom == XA_WM_NAME || ev->atom == netAtoms[NET_WM_NAME]) {
       updateWindowTitle(c);
     }
-    if (ev->atom == netatom[NetWMWindowType])
+    if (ev->atom == netAtoms[NET_WM_WINDOW_TYPE])
       updateWindowTypeProps(c);
   }
 }
@@ -237,7 +236,7 @@ void handleWindowMappingRequest(XEvent *e) {
   static XWindowAttributes wa;
   XMapRequestEvent *ev = &e->xmaprequest;
 
-  if (!XGetWindowAttributes(dpy, ev->window, &wa) || wa.override_redirect)
+  if (!XGetWindowAttributes(display, ev->window, &wa) || wa.override_redirect)
     return;
   if (!findClientFromWindow(ev->window))
     manage(ev->window, &wa);
@@ -245,7 +244,7 @@ void handleWindowMappingRequest(XEvent *e) {
 
 void handleKeypress(XEvent *e) {
   XKeyEvent *ev = &e->xkey;
-  KeySym keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+  KeySym keysym = XKeycodeToKeysym(display, (KeyCode)ev->keycode, 0);
   unsigned int cleanMask = CLEANMASK(ev->state);
 
   for (int i = 0; i < cfg.keybindingCount; i++) {

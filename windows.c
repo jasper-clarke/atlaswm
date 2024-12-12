@@ -2,7 +2,7 @@
 // "How should this window appear and behave?"
 
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -38,7 +38,7 @@ void manage(Window w, XWindowAttributes *wa) {
   c->horizontalRatio = 0.5;
   c->verticalRatio = 0.5;
 
-  if (XGetTransientForHint(dpy, w, &trans) &&
+  if (XGetTransientForHint(display, w, &trans) &&
       (t = findClientFromWindow(trans))) {
     c->monitor = t->monitor;
     c->workspaces = t->workspaces;
@@ -56,34 +56,34 @@ void manage(Window w, XWindowAttributes *wa) {
   c->borderWidth = cfg.borderWidth;
 
   wc.border_width = c->borderWidth;
-  XConfigureWindow(dpy, w, CWBorderWidth, &wc);
+  XConfigureWindow(display, w, CWBorderWidth, &wc);
   Clr borderColor;
-  drw_clr_create(drw, &borderColor, cfg.borderInactiveColor);
-  XSetWindowBorder(dpy, w, borderColor.pixel);
+  drw_clr_create(drawContext, &borderColor, cfg.borderInactiveColor);
+  XSetWindowBorder(display, w, borderColor.pixel);
   configure(c); /* propagates border_width, if size doesn't change */
   updateWindowTypeProps(c);
   updateWindowSizeHints(c);
   updateWindowManagerHints(c);
-  XSelectInput(dpy, w,
+  XSelectInput(display, w,
                EnterWindowMask | FocusChangeMask | PropertyChangeMask |
                    StructureNotifyMask);
   registerMouseButtons(c, 0);
   if (!c->isFloating)
     c->isFloating = c->previousState = trans != None || c->isFixedSize;
   if (c->isFloating)
-    XRaiseWindow(dpy, c->win);
+    XRaiseWindow(display, c->win);
   attach(c);
   attachWindowToStack(c);
-  XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32,
+  XChangeProperty(display, root, netAtoms[NET_CLIENT_LIST], XA_WINDOW, 32,
                   PropModeAppend, (unsigned char *)&(c->win), 1);
-  XMoveResizeWindow(dpy, c->win, c->x + 2 * screenWidth, c->y, c->w,
+  XMoveResizeWindow(display, c->win, c->x + 2 * screenWidth, c->y, c->w,
                     c->h); /* some windows require this */
   setclientstate(c, NormalState);
   if (c->monitor == selectedMonitor)
     unfocus(selectedMonitor->active, 0);
   c->monitor->active = c;
   arrange(c->monitor);
-  XMapWindow(dpy, c->win);
+  XMapWindow(display, c->win);
   if (cfg.focusNewWindows) {
     focus(c);
     moveCursorToClientCenter(c);
@@ -108,15 +108,15 @@ void unmanage(Client *c, int destroyed) {
   detachWindowFromStack(c);
   if (!destroyed) {
     wc.border_width = c->oldBorderWidth;
-    XGrabServer(dpy); /* avoid race conditions */
-    XSetErrorHandler(xerrordummy);
-    XSelectInput(dpy, c->win, NoEventMask);
-    XConfigureWindow(dpy, c->win, CWBorderWidth, &wc); /* restore border */
-    XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
+    XGrabServer(display); /* avoid race conditions */
+    XSetErrorHandler(handleXErrorDummy);
+    XSelectInput(display, c->win, NoEventMask);
+    XConfigureWindow(display, c->win, CWBorderWidth, &wc); /* restore border */
+    XUngrabButton(display, AnyButton, AnyModifier, c->win);
     setclientstate(c, WithdrawnState);
-    XSync(dpy, False);
-    XSetErrorHandler(xerror);
-    XUngrabServer(dpy);
+    XSync(display, False);
+    XSetErrorHandler(handleXError);
+    XUngrabServer(display);
   }
   free(c);
 
@@ -126,29 +126,29 @@ void unmanage(Client *c, int destroyed) {
 }
 
 void updateWindowTitle(Client *c) {
-  if (!gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
+  if (!gettextprop(c->win, netAtoms[NET_WM_NAME], c->name, sizeof c->name))
     gettextprop(c->win, XA_WM_NAME, c->name, sizeof c->name);
   if (c->name[0] == '\0') /* hack to mark broken clients */
     strcpy(c->name, broken);
 }
 
 void updateWindowTypeProps(Client *c) {
-  Atom state = getatomprop(c, netatom[NetWMState]);
-  Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
+  Atom state = getatomprop(c, netAtoms[NET_WM_STATE]);
+  Atom wtype = getatomprop(c, netAtoms[NET_WM_WINDOW_TYPE]);
 
-  if (state == netatom[NetWMFullscreen])
+  if (state == netAtoms[NET_WM_FULLSCREEN])
     setWindowFullscreen(c, 1);
-  if (wtype == netatom[NetWMWindowTypeDialog])
+  if (wtype == netAtoms[NET_WM_WINDOW_TYPE_DIALOG])
     c->isFloating = 1;
 }
 
 void updateWindowManagerHints(Client *c) {
   XWMHints *wmh;
 
-  if ((wmh = XGetWMHints(dpy, c->win))) {
+  if ((wmh = XGetWMHints(display, c->win))) {
     if (c == selectedMonitor->active && wmh->flags & XUrgencyHint) {
       wmh->flags &= ~XUrgencyHint;
-      XSetWMHints(dpy, c->win, wmh);
+      XSetWMHints(display, c->win, wmh);
     } else
       c->isUrgent = (wmh->flags & XUrgencyHint) ? 1 : 0;
     if (wmh->flags & InputHint)
@@ -163,7 +163,7 @@ void updateWindowSizeHints(Client *c) {
   long msize;
   XSizeHints size;
 
-  if (!XGetWMNormalHints(dpy, c->win, &size, &msize))
+  if (!XGetWMNormalHints(display, c->win, &size, &msize))
     /* size is uninitialized, ensure that size.flags aren't used */
     size.flags = PSize;
   if (size.flags & PBaseSize) {
@@ -206,7 +206,7 @@ void configure(Client *c) {
   XConfigureEvent ce;
 
   ce.type = ConfigureNotify;
-  ce.display = dpy;
+  ce.display = display;
   ce.event = c->win;
   ce.window = c->win;
   ce.x = c->x;
@@ -216,7 +216,7 @@ void configure(Client *c) {
   ce.border_width = c->borderWidth;
   ce.above = None;
   ce.override_redirect = False;
-  XSendEvent(dpy, c->win, False, StructureNotifyMask, (XEvent *)&ce);
+  XSendEvent(display, c->win, False, StructureNotifyMask, (XEvent *)&ce);
 }
 
 void applyWindowRules(Client *c) {
@@ -229,7 +229,7 @@ void applyWindowRules(Client *c) {
   /* rule matching */
   c->isFloating = 0;
   c->workspaces = 0;
-  XGetClassHint(dpy, c->win, &ch);
+  XGetClassHint(display, c->win, &ch);
   class = ch.res_class ? ch.res_class : broken;
   instance = ch.res_name ? ch.res_name : broken;
 
@@ -322,9 +322,9 @@ int applyWindowSizeConstraints(Client *c, int *x, int *y, int *w, int *h,
 
 void setWindowFullscreen(Client *c, int fullscreen) {
   if (fullscreen && !c->isFullscreen) {
-    XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-                    PropModeReplace, (unsigned char *)&netatom[NetWMFullscreen],
-                    1);
+    XChangeProperty(display, c->win, netAtoms[NET_WM_STATE], XA_ATOM, 32,
+                    PropModeReplace,
+                    (unsigned char *)&netAtoms[NET_WM_FULLSCREEN], 1);
     c->isFullscreen = 1;
     c->previousState = c->isFloating;
     c->oldBorderWidth = c->borderWidth;
@@ -332,9 +332,9 @@ void setWindowFullscreen(Client *c, int fullscreen) {
     c->isFloating = 1;
     resizeclient(c, c->monitor->mx, c->monitor->my, c->monitor->mw,
                  c->monitor->mh);
-    XRaiseWindow(dpy, c->win);
+    XRaiseWindow(display, c->win);
   } else if (!fullscreen && c->isFullscreen) {
-    XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+    XChangeProperty(display, c->win, netAtoms[NET_WM_STATE], XA_ATOM, 32,
                     PropModeReplace, (unsigned char *)0, 0);
     c->isFullscreen = 0;
     c->isFloating = c->previousState;
@@ -352,10 +352,10 @@ void setWindowUrgent(Client *c, int urg) {
   XWMHints *wmh;
 
   c->isUrgent = urg;
-  if (!(wmh = XGetWMHints(dpy, c->win)))
+  if (!(wmh = XGetWMHints(display, c->win)))
     return;
   wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-  XSetWMHints(dpy, c->win, wmh);
+  XSetWMHints(display, c->win, wmh);
   XFree(wmh);
 }
 
@@ -379,7 +379,7 @@ void toggleWindowVisibility(Client *c) {
     return;
   if (ISVISIBLE(c)) {
     /* show clients top down */
-    XMoveWindow(dpy, c->win, c->x, c->y);
+    XMoveWindow(display, c->win, c->x, c->y);
     if ((!c->monitor->layouts[c->monitor->selectedLayout]->arrange ||
          c->isFloating) &&
         !c->isFullscreen)
@@ -388,7 +388,7 @@ void toggleWindowVisibility(Client *c) {
   } else {
     /* hide clients bottom up */
     toggleWindowVisibility(c->nextInStack);
-    XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
+    XMoveWindow(display, c->win, WIDTH(c) * -2, c->y);
   }
 }
 
@@ -409,16 +409,16 @@ void resizeclient(Client *c, int x, int y, int w, int h) {
   c->oldh = c->h;
   c->h = wc.height = h;
   wc.border_width = c->borderWidth;
-  XConfigureWindow(dpy, c->win, CWX | CWY | CWWidth | CWHeight | CWBorderWidth,
-                   &wc);
+  XConfigureWindow(display, c->win,
+                   CWX | CWY | CWWidth | CWHeight | CWBorderWidth, &wc);
   configure(c);
-  XSync(dpy, False);
+  XSync(display, False);
 }
 
 void setclientstate(Client *c, long state) {
   long data[] = {state, None};
 
-  XChangeProperty(dpy, c->win, wmatom[WMState], wmatom[WMState], 32,
+  XChangeProperty(display, c->win, wmAtoms[WM_STATE], wmAtoms[WM_STATE], 32,
                   PropModeReplace, (unsigned char *)data, 2);
 }
 
@@ -428,7 +428,7 @@ int sendevent(Client *c, Atom proto) {
   int exists = 0;
   XEvent ev;
 
-  if (XGetWMProtocols(dpy, c->win, &protocols, &n)) {
+  if (XGetWMProtocols(display, c->win, &protocols, &n)) {
     while (!exists && n--)
       exists = protocols[n] == proto;
     XFree(protocols);
@@ -436,11 +436,11 @@ int sendevent(Client *c, Atom proto) {
   if (exists) {
     ev.type = ClientMessage;
     ev.xclient.window = c->win;
-    ev.xclient.message_type = wmatom[WMProtocols];
+    ev.xclient.message_type = wmAtoms[WM_PROTOCOLS];
     ev.xclient.format = 32;
     ev.xclient.data.l[0] = proto;
     ev.xclient.data.l[1] = CurrentTime;
-    XSendEvent(dpy, c->win, False, NoEventMask, &ev);
+    XSendEvent(display, c->win, False, NoEventMask, &ev);
   }
   return exists;
 }
@@ -468,7 +468,7 @@ Atom getatomprop(Client *c, Atom prop) {
   unsigned char *p = NULL;
   Atom da, atom = None;
 
-  if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
+  if (XGetWindowProperty(display, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
                          &da, &di, &dl, &dl, &p) == Success &&
       p) {
     atom = *(Atom *)p;
@@ -484,8 +484,8 @@ long getstate(Window w) {
   unsigned long n, extra;
   Atom real;
 
-  if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False,
-                         wmatom[WMState], &real, &format, &n, &extra,
+  if (XGetWindowProperty(display, w, wmAtoms[WM_STATE], 0L, 2L, False,
+                         wmAtoms[WM_STATE], &real, &format, &n, &extra,
                          (unsigned char **)&p) != Success)
     return -1;
   if (n != 0)
@@ -502,11 +502,11 @@ int gettextprop(Window w, Atom atom, char *text, unsigned int size) {
   if (!text || size == 0)
     return 0;
   text[0] = '\0';
-  if (!XGetTextProperty(dpy, w, &name, atom) || !name.nitems)
+  if (!XGetTextProperty(display, w, &name, atom) || !name.nitems)
     return 0;
   if (name.encoding == XA_STRING) {
     strncpy(text, (char *)name.value, size - 1);
-  } else if (XmbTextPropertyToTextList(dpy, &name, &list, &n) >= Success &&
+  } else if (XmbTextPropertyToTextList(display, &name, &list, &n) >= Success &&
              n > 0 && *list) {
     strncpy(text, *list, size - 1);
     XFreeStringList(list);
@@ -518,7 +518,7 @@ int gettextprop(Window w, Atom atom, char *text, unsigned int size) {
 
 void setCurrentDesktop(void) {
   long data[] = {0};
-  XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32,
+  XChangeProperty(display, root, netAtoms[NET_CURRENT_DESKTOP], XA_CARDINAL, 32,
                   PropModeReplace, (unsigned char *)data, 1);
 }
 void setDesktopNames(void) {
@@ -530,21 +530,21 @@ void setDesktopNames(void) {
   }
 
   // Convert list to text property
-  Xutf8TextListToTextProperty(dpy, list, cfg.workspaceCount, XUTF8StringStyle,
-                              &text);
-  XSetTextProperty(dpy, root, &text, netatom[NetDesktopNames]);
+  Xutf8TextListToTextProperty(display, list, cfg.workspaceCount,
+                              XUTF8StringStyle, &text);
+  XSetTextProperty(display, root, &text, netAtoms[NET_DESKTOP_NAMES]);
 }
 
 void setNumDesktops(void) {
   long data[] = {cfg.workspaceCount};
-  XChangeProperty(dpy, root, netatom[NetNumberOfDesktops], XA_CARDINAL, 32,
-                  PropModeReplace, (unsigned char *)data, 1);
+  XChangeProperty(display, root, netAtoms[NET_NUMBER_OF_DESKTOPS], XA_CARDINAL,
+                  32, PropModeReplace, (unsigned char *)data, 1);
 }
 
 void setViewport(void) {
   long data[] = {0, 0};
-  XChangeProperty(dpy, root, netatom[NetDesktopViewport], XA_CARDINAL, 32,
-                  PropModeReplace, (unsigned char *)data, 2);
+  XChangeProperty(display, root, netAtoms[NET_DESKTOP_VIEWPORT], XA_CARDINAL,
+                  32, PropModeReplace, (unsigned char *)data, 2);
 }
 
 void updateCurrentDesktop(void) {
@@ -555,6 +555,6 @@ void updateCurrentDesktop(void) {
     i++;
   }
   long data[] = {i};
-  XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32,
+  XChangeProperty(display, root, netAtoms[NET_CURRENT_DESKTOP], XA_CARDINAL, 32,
                   PropModeReplace, (unsigned char *)data, 1);
 }

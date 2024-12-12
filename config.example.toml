@@ -16,9 +16,6 @@ width = 3
 [layout]
 master_factor = 0.5
 
-[performance]
-refresh_rate = 144
-
 [keybindings]
 "Super+e" = { action = "spawn", value = "kitty", desc = "Launch Terminal" }
 "Super+space" = { action = "spawn", value = "rofi -show drun -theme ~/.config/rofi/launcher.rasi", desc = "Launch Applications" }

@@ -1,4 +1,4 @@
-#include "configurer.h" // Includes "atlas.h"
+#include "config.h" // Includes "atlas.h"
 #include "atlas.h"
 #include "toml.h"
 #include "util.h"
@@ -11,14 +11,15 @@ Config cfg = {
     .outerGaps = 20,
     .innerGaps = 10,
     .borderWidth = 3,
-    .borderActiveColor = "#222222",
-    .borderInactiveColor = "#444444",
+    .borderInactiveColor = "#222222",
+    .borderActiveColor = "#444444",
     .snapDistance = 0,
     .masterFactor = 0.5,
     .lockFullscreen = 1,
     .focusNewWindows = 1,
+    .keybindings = NULL,
+    .keybindingCapacity = 0,
     .moveCursorWithFocus = 1,
-    .refreshRate = 60,
     .logLevel = "info",
 };
 
@@ -87,9 +88,18 @@ KeySym parse_key(const char *key) {
 }
 
 void parse_keybinding(const char *key_str, toml_table_t *binding_table) {
-  if (cfg.keybindingCount >= MAX_KEYBINDINGS) {
-    LOG_ERROR("Maximum number of keybindings reached");
-    return;
+  // Grow keybindings array if needed
+  if (cfg.keybindingCount >= cfg.keybindingCapacity) {
+    size_t new_capacity =
+        cfg.keybindingCapacity == 0 ? 16 : cfg.keybindingCapacity * 2;
+    Keybinding *new_keybindings =
+        realloc(cfg.keybindings, new_capacity * sizeof(Keybinding));
+    if (!new_keybindings) {
+      LOG_ERROR("Failed to allocate memory for keybindings");
+      return;
+    }
+    cfg.keybindings = new_keybindings;
+    cfg.keybindingCapacity = new_capacity;
   }
 
   // Parse the key combination
@@ -124,18 +134,20 @@ void parse_keybinding(const char *key_str, toml_table_t *binding_table) {
   kb->keysym = parse_key(key);
   kb->action = string_to_action(action.u.s);
 
+  // Allocate and copy value if present
   if (value.ok) {
-    strncpy(kb->value, value.u.s, MAX_VALUE_LENGTH - 1);
+    kb->value = strdup(value.u.s);
     free(value.u.s);
   } else {
-    kb->value[0] = '\0';
+    kb->value = strdup(""); // Empty string instead of NULL
   }
 
+  // Allocate and copy description if present
   if (desc.ok) {
-    strncpy(kb->description, desc.u.s, MAX_VALUE_LENGTH - 1);
+    kb->description = strdup(desc.u.s);
     free(desc.u.s);
   } else {
-    kb->description[0] = '\0';
+    kb->description = strdup(""); // Empty string instead of NULL
   }
 
   free(modifier_str);
@@ -255,7 +267,7 @@ void load_startup_programs(toml_table_t *conf) {
   }
 }
 
-static void free_workspaces() {
+static void free_workspaces(void) {
   if (cfg.workspaces) {
     for (size_t i = 0; i < cfg.workspaceCount; i++) {
       free(cfg.workspaces[i].name);
@@ -311,18 +323,18 @@ static void load_workspaces(toml_table_t *conf) {
 // Add this to update_window_manager_state()
 void update_keybindings(void) {
   // Clear existing keybindings
-  XUngrabKey(dpy, AnyKey, AnyModifier, root);
+  XUngrabKey(display, AnyKey, AnyModifier, root);
 
   // Register new keybindings
   updateNumlockMask();
-  unsigned int modifiers[] = {0, LockMask, numlockmask, numlockmask | LockMask};
+  unsigned int modifiers[] = {0, LockMask, numLockMask, numLockMask | LockMask};
 
   for (int i = 0; i < cfg.keybindingCount; i++) {
-    KeyCode code = XKeysymToKeycode(dpy, cfg.keybindings[i].keysym);
+    KeyCode code = XKeysymToKeycode(display, cfg.keybindings[i].keysym);
     if (code) {
       for (size_t j = 0; j < LENGTH(modifiers); j++) {
-        XGrabKey(dpy, code, cfg.keybindings[i].modifier | modifiers[j], root,
-                 True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(display, code, cfg.keybindings[i].modifier | modifiers[j],
+                 root, True, GrabModeAsync, GrabModeAsync);
       }
     }
   }
@@ -340,10 +352,11 @@ void update_window_manager_state(void) {
         // Update border width
         c->borderWidth = cfg.borderWidth;
         Clr activeBorderColor;
-        drw_clr_create(drw, &activeBorderColor, cfg.borderActiveColor);
+        drw_clr_create(drawContext, &activeBorderColor, cfg.borderActiveColor);
         Clr inactiveBorderColor;
-        drw_clr_create(drw, &inactiveBorderColor, cfg.borderInactiveColor);
-        XSetWindowBorder(dpy, c->win,
+        drw_clr_create(drawContext, &inactiveBorderColor,
+                       cfg.borderInactiveColor);
+        XSetWindowBorder(display, c->win,
                          (c == selectedMonitor->active)
                              ? activeBorderColor.pixel
                              : inactiveBorderColor.pixel);
@@ -353,7 +366,7 @@ void update_window_manager_state(void) {
                              .width = c->w,
                              .height = c->h,
                              .border_width = c->borderWidth};
-        XConfigureWindow(dpy, c->win,
+        XConfigureWindow(display, c->win,
                          CWX | CWY | CWWidth | CWHeight | CWBorderWidth, &wc);
       }
     }
@@ -374,7 +387,7 @@ void update_window_manager_state(void) {
   update_keybindings();
 
   // Sync changes
-  XSync(dpy, False);
+  XSync(display, False);
 }
 
 int load_config(const char *config_path) {
@@ -455,15 +468,6 @@ int load_config(const char *config_path) {
         toml_bool_in(windows, "move_cursor_with_focus");
     if (move_cursor_with_focus.ok) {
       cfg.moveCursorWithFocus = move_cursor_with_focus.u.b;
-    }
-  }
-
-  // Performance
-  toml_table_t *performance = toml_table_in(conf, "performance");
-  if (performance) {
-    toml_datum_t refresh_rate = toml_int_in(performance, "refresh_rate");
-    if (refresh_rate.ok) {
-      cfg.refreshRate = refresh_rate.u.i;
     }
   }
 

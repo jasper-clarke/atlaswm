@@ -1,5 +1,5 @@
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -8,48 +8,48 @@
 #define MODKEY Mod4Mask
 static const Button buttons[] = {
     /* click                event mask      button          function argument */
-    {ClkClientWin, MODKEY, Button1, moveWindow, {0}},
-    {ClkClientWin, MODKEY, Button2, toggleWindowFloating, {0}},
-    {ClkClientWin, MODKEY, Button3, resizeWindow, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button1, moveWindow, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button2, toggleWindowFloating, {0}},
+    {CLICK_CLIENT_WINDOW, MODKEY, Button3, resizeWindow, {0}},
 };
 
 void registerMouseButtons(Client *c, int focused) {
   updateNumlockMask();
   {
     unsigned int i, j;
-    unsigned int modifiers[] = {0, LockMask, numlockmask,
-                                numlockmask | LockMask};
-    XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
+    unsigned int modifiers[] = {0, LockMask, numLockMask,
+                                numLockMask | LockMask};
+    XUngrabButton(display, AnyButton, AnyModifier, c->win);
     if (!focused)
-      XGrabButton(dpy, AnyButton, AnyModifier, c->win, False, BUTTONMASK,
+      XGrabButton(display, AnyButton, AnyModifier, c->win, False, BUTTONMASK,
                   GrabModeSync, GrabModeSync, None, None);
     for (i = 0; i < LENGTH(buttons); i++)
-      if (buttons[i].click == ClkClientWin)
+      if (buttons[i].click == CLICK_CLIENT_WINDOW)
         for (j = 0; j < LENGTH(modifiers); j++)
-          XGrabButton(dpy, buttons[i].button, buttons[i].mask | modifiers[j],
-                      c->win, False, BUTTONMASK, GrabModeAsync, GrabModeSync,
-                      None, None);
+          XGrabButton(display, buttons[i].button,
+                      buttons[i].mask | modifiers[j], c->win, False, BUTTONMASK,
+                      GrabModeAsync, GrabModeSync, None, None);
   }
 }
 
 void registerKeyboardShortcuts(void) {
   // Clear any existing key bindings
-  XUngrabKey(dpy, AnyKey, AnyModifier, root);
+  XUngrabKey(display, AnyKey, AnyModifier, root);
 
   // Get numlock mask
   updateNumlockMask();
 
   // Common modifier combinations to handle
-  unsigned int modifiers[] = {0, LockMask, numlockmask, numlockmask | LockMask};
+  unsigned int modifiers[] = {0, LockMask, numLockMask, numLockMask | LockMask};
 
   // Register all configured keybindings from TOML config
   for (int i = 0; i < cfg.keybindingCount; i++) {
-    KeyCode code = XKeysymToKeycode(dpy, cfg.keybindings[i].keysym);
+    KeyCode code = XKeysymToKeycode(display, cfg.keybindings[i].keysym);
     if (code) {
       // Register the keybinding with all modifier combinations
       for (size_t j = 0; j < LENGTH(modifiers); j++) {
-        XGrabKey(dpy, code, cfg.keybindings[i].modifier | modifiers[j], root,
-                 True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(display, code, cfg.keybindings[i].modifier | modifiers[j],
+                 root, True, GrabModeAsync, GrabModeAsync);
       }
     } else {
       LOG_ERROR("Failed to get keycode for keysym in binding %d", i);
@@ -61,13 +61,13 @@ void updateNumlockMask(void) {
   unsigned int i, j;
   XModifierKeymap *modmap;
 
-  numlockmask = 0;
-  modmap = XGetModifierMapping(dpy);
+  numLockMask = 0;
+  modmap = XGetModifierMapping(display);
   for (i = 0; i < 8; i++)
     for (j = 0; j < modmap->max_keypermod; j++)
       if (modmap->modifiermap[i * modmap->max_keypermod + j] ==
-          XKeysymToKeycode(dpy, XK_Num_Lock))
-        numlockmask = (1 << i);
+          XKeysymToKeycode(display, XK_Num_Lock))
+        numLockMask = (1 << i);
   XFreeModifiermap(modmap);
 }
 
@@ -76,7 +76,6 @@ void moveWindow(const Arg *arg) {
   Client *c;
   Monitor *m;
   XEvent ev;
-  Time lasttime = 0;
 
   if (!(c = selectedMonitor->active))
     return;
@@ -85,23 +84,22 @@ void moveWindow(const Arg *arg) {
   restack(selectedMonitor);
   ocx = c->x;
   ocy = c->y;
-  if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
-                   None, cursor[CurMove]->cursor, CurrentTime) != GrabSuccess)
+  if (XGrabPointer(display, root, False, MOUSEMASK, GrabModeAsync,
+                   GrabModeAsync, None, cursor[CURSOR_MOVE]->cursor,
+                   CurrentTime) != GrabSuccess)
     return;
   if (!getRootPointer(&x, &y))
     return;
   do {
-    XMaskEvent(dpy, MOUSEMASK | ExposureMask | SubstructureRedirectMask, &ev);
+    XMaskEvent(display, MOUSEMASK | ExposureMask | SubstructureRedirectMask,
+               &ev);
     switch (ev.type) {
     case ConfigureRequest:
     case Expose:
     case MapRequest:
-      handler[ev.type](&ev);
+      eventHandlers[ev.type](&ev);
       break;
     case MotionNotify:
-      if ((ev.xmotion.time - lasttime) <= (1000 / cfg.refreshRate))
-        continue;
-      lasttime = ev.xmotion.time;
       nx = ocx + (ev.xmotion.x - x);
       ny = ocy + (ev.xmotion.y - y);
       if (abs(selectedMonitor->wx - nx) < cfg.snapDistance)
@@ -125,7 +123,7 @@ void moveWindow(const Arg *arg) {
       break;
     }
   } while (ev.type != ButtonRelease);
-  XUngrabPointer(dpy, CurrentTime);
+  XUngrabPointer(display, CurrentTime);
   if ((m = getMonitorForArea(c->x, c->y, c->w, c->h)) != selectedMonitor) {
     sendWindowToMonitor(c, m);
     selectedMonitor = m;
@@ -143,7 +141,6 @@ void resizeWindow(const Arg *arg) {
   int hCorner, vCorner;
   int di;
   unsigned int dui;
-  Time lasttime = 0;
   int isDwindle;
 
   if (!(c = selectedMonitor->active))
@@ -161,30 +158,29 @@ void resizeWindow(const Arg *arg) {
   ocx2 = c->x + c->w;
   ocy2 = c->y + c->h;
 
-  if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
-                   None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
+  if (XGrabPointer(display, root, False, MOUSEMASK, GrabModeAsync,
+                   GrabModeAsync, None, cursor[CURSOR_RESIZE]->cursor,
+                   CurrentTime) != GrabSuccess)
     return;
 
-  if (!XQueryPointer(dpy, c->win, &dummy, &dummy, &di, &di, &nx, &ny, &dui))
+  if (!XQueryPointer(display, c->win, &dummy, &dummy, &di, &di, &nx, &ny, &dui))
     return;
   hCorner = nx < c->w / 2;
   vCorner = ny < c->h / 2;
-  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0,
+  XWarpPointer(display, None, c->win, 0, 0, 0, 0,
                hCorner ? (-c->borderWidth) : (c->w + c->borderWidth - 1),
                vCorner ? (-c->borderWidth) : (c->h + c->borderWidth - 1));
 
   do {
-    XMaskEvent(dpy, MOUSEMASK | ExposureMask | SubstructureRedirectMask, &ev);
+    XMaskEvent(display, MOUSEMASK | ExposureMask | SubstructureRedirectMask,
+               &ev);
     switch (ev.type) {
     case ConfigureRequest:
     case Expose:
     case MapRequest:
-      handler[ev.type](&ev);
+      eventHandlers[ev.type](&ev);
       break;
     case MotionNotify:
-      if ((ev.xmotion.time - lasttime) <= (1000 / cfg.refreshRate))
-        continue;
-      lasttime = ev.xmotion.time;
       nx = hCorner && ocx2 - ev.xmotion.x >= c->minw ? ev.xmotion.x : c->x;
       ny = vCorner && ocy2 - ev.xmotion.y >= c->minh ? ev.xmotion.y : c->y;
       nw = MAX(hCorner ? (ocx2 - nx)
@@ -223,11 +219,11 @@ void resizeWindow(const Arg *arg) {
     }
   } while (ev.type != ButtonRelease);
 
-  XWarpPointer(dpy, None, c->win, 0, 0, 0, 0,
+  XWarpPointer(display, None, c->win, 0, 0, 0, 0,
                hCorner ? (-c->borderWidth) : (c->w + c->borderWidth - 1),
                vCorner ? (-c->borderWidth) : (c->h + c->borderWidth - 1));
-  XUngrabPointer(dpy, CurrentTime);
-  while (XCheckMaskEvent(dpy, EnterWindowMask, &ev))
+  XUngrabPointer(display, CurrentTime);
+  while (XCheckMaskEvent(display, EnterWindowMask, &ev))
     ;
 
   if ((m = getMonitorForArea(c->x, c->y, c->w, c->h)) != selectedMonitor) {
@@ -242,5 +238,5 @@ int getRootPointer(int *x, int *y) {
   unsigned int dui;
   Window dummy;
 
-  return XQueryPointer(dpy, root, &dummy, &dummy, x, y, &di, &di, &dui);
+  return XQueryPointer(display, root, &dummy, &dummy, x, y, &di, &di, &dui);
 }

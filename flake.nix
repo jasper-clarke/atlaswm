@@ -60,6 +60,7 @@
           xorg.xinit
           clang
           wmctrl
+          bear
         ];
       };
     });

@@ -6,7 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 
 // ANSI color codes for different log levels

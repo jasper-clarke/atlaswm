@@ -1,13 +1,11 @@
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/Xinerama.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef XINERAMA
-#include <X11/extensions/Xinerama.h>
-#endif /* XINERAMA */
 
 const Layout layouts[] = {
     {"dwindle", dwindlegaps},
@@ -15,7 +13,6 @@ const Layout layouts[] = {
     {"full", monocle},
 };
 
-#ifdef XINERAMA
 static int isuniquegeom(XineramaScreenInfo *unique, size_t n,
                         XineramaScreenInfo *info) {
   while (n--)
@@ -24,7 +21,6 @@ static int isuniquegeom(XineramaScreenInfo *unique, size_t n,
       return 0;
   return 1;
 }
-#endif /* XINERAMA */
 
 Monitor *createMonitor(void) {
   Monitor *m;
@@ -54,12 +50,11 @@ void cleanupMonitor(Monitor *mon) {
 int updateMonitorGeometry(void) {
   int dirty = 0;
 
-#ifdef XINERAMA
-  if (XineramaIsActive(dpy)) {
+  if (XineramaIsActive(display)) {
     int i, j, n, nn;
     Client *c;
     Monitor *m;
-    XineramaScreenInfo *info = XineramaQueryScreens(dpy, &nn);
+    XineramaScreenInfo *info = XineramaQueryScreens(display, &nn);
     XineramaScreenInfo *unique = NULL;
 
     for (n = 0, m = monitors; m; m = m->next, n++)
@@ -108,9 +103,7 @@ int updateMonitorGeometry(void) {
       cleanupMonitor(m);
     }
     free(unique);
-  } else
-#endif /* XINERAMA */
-  {    /* default monitor setup */
+  } else { /* default monitor setup */
     if (!monitors)
       monitors = createMonitor();
     if (monitors->mw != screenWidth || monitors->mh != screenHeight) {

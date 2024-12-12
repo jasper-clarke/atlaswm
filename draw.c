@@ -8,9 +8,9 @@
 #include "util.h"
 
 /* Basic drawing context for color allocation */
-Drw *drw_create(Display *dpy, int screen, Window root, unsigned int w,
-                unsigned int h) {
-  Drw *drw = ecalloc(1, sizeof(Drw));
+DrawContext *drw_create(Display *dpy, int screen, Window root, unsigned int w,
+                        unsigned int h) {
+  DrawContext *drw = ecalloc(1, sizeof(DrawContext));
   drw->dpy = dpy;
   drw->screen = screen;
   drw->root = root;
@@ -22,14 +22,14 @@ Drw *drw_create(Display *dpy, int screen, Window root, unsigned int w,
   return drw;
 }
 
-void drw_free(Drw *drw) {
+void drw_free(DrawContext *drw) {
   XFreePixmap(drw->dpy, drw->drawable);
   XFreeGC(drw->dpy, drw->gc);
   free(drw);
 }
 
 /* Color allocation for window borders */
-void drw_clr_create(Drw *drw, Clr *dest, const char *clrname) {
+void drw_clr_create(DrawContext *drw, Clr *dest, const char *clrname) {
   if (!drw || !dest || !clrname)
     return;
 
@@ -39,17 +39,17 @@ void drw_clr_create(Drw *drw, Clr *dest, const char *clrname) {
 }
 
 /* Create cursors */
-Cur *drw_cur_create(Drw *drw, int shape) {
-  Cur *cur;
+CursorWrapper *drw_cur_create(DrawContext *drw, int shape) {
+  CursorWrapper *cur;
 
-  if (!drw || !(cur = ecalloc(1, sizeof(Cur))))
+  if (!drw || !(cur = ecalloc(1, sizeof(CursorWrapper))))
     return NULL;
 
   cur->cursor = XCreateFontCursor(drw->dpy, shape);
   return cur;
 }
 
-void drw_cur_free(Drw *drw, Cur *cursor) {
+void drw_cur_free(DrawContext *drw, CursorWrapper *cursor) {
   if (!cursor)
     return;
   XFreeCursor(drw->dpy, cursor->cursor);

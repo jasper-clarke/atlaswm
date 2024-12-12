@@ -2,6 +2,7 @@
 #define _CONFIG_MANAGER_H_
 
 #include "atlas.h"
+#include "freetype2/freetype/config/ftstdlib.h"
 
 // Configuration structure
 typedef struct {
@@ -23,11 +24,9 @@ typedef struct {
   int moveCursorWithFocus;
 
   // Keybindings
-  Keybinding keybindings[MAX_KEYBINDINGS];
-  int keybindingCount;
-
-  // Performance
-  int refreshRate;
+  Keybinding *keybindings;
+  size_t keybindingCount;
+  size_t keybindingCapacity;
 
   // Workspaces
   Workspace *workspaces;
@@ -42,7 +41,7 @@ typedef struct {
 // Global configuration instance
 extern Config cfg;
 
-extern Display *dpy;
+extern Display *display;
 extern Monitor *monitors;
 extern Monitor *selectedMonitor;
 

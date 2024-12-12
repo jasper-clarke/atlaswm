@@ -1,5 +1,5 @@
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -8,6 +8,55 @@
 #include <unistd.h>
 
 static void reload(const Arg *arg) { reload_config(); }
+
+char **parse_command_string(const char *cmd) {
+  if (!cmd)
+    return NULL;
+
+  // Count the number of arguments needed
+  int count = 1; // Start with 1 for the first arg
+  const char *tmp = cmd;
+  while (*tmp) {
+    if (*tmp == ' ')
+      count++;
+    tmp++;
+  }
+
+  // Allocate array of string pointers (plus one for NULL terminator)
+  char **argv = calloc(count + 1, sizeof(char *));
+  if (!argv)
+    return NULL;
+
+  // Make a copy of cmd that we can modify
+  char *cmd_copy = strdup(cmd);
+  if (!cmd_copy) {
+    free(argv);
+    return NULL;
+  }
+
+  // Parse the arguments
+  int i = 0;
+  char *token = strtok(cmd_copy, " ");
+  while (token && i < count) {
+    argv[i] = strdup(token);
+    token = strtok(NULL, " ");
+    i++;
+  }
+  argv[i] = NULL; // NULL terminate the array
+
+  free(cmd_copy);
+  return argv;
+}
+
+// Helper function to free the argument array
+void free_command_args(char **argv) {
+  if (!argv)
+    return;
+  for (int i = 0; argv[i] != NULL; i++) {
+    free(argv[i]);
+  }
+  free(argv);
+}
 
 void executeKeybinding(Keybinding *kb) {
   Arg arg = {0};
@@ -134,25 +183,25 @@ void executeKeybinding(Keybinding *kb) {
 void killclient(const Arg *arg) {
   if (!selectedMonitor->active)
     return;
-  if (!sendevent(selectedMonitor->active, wmatom[WMDelete])) {
-    XGrabServer(dpy);
-    XSetErrorHandler(xerrordummy);
-    XSetCloseDownMode(dpy, DestroyAll);
-    XKillClient(dpy, selectedMonitor->active->win);
-    XSync(dpy, False);
-    XSetErrorHandler(xerror);
-    XUngrabServer(dpy);
+  if (!sendevent(selectedMonitor->active, wmAtoms[WM_DELETE])) {
+    XGrabServer(display);
+    XSetErrorHandler(handleXErrorDummy);
+    XSetCloseDownMode(display, DestroyAll);
+    XKillClient(display, selectedMonitor->active->win);
+    XSync(display, False);
+    XSetErrorHandler(handleXError);
+    XUngrabServer(display);
   }
 }
 
-void quit(const Arg *arg) { running = 0; }
+void quit(const Arg *arg) { isWMRunning = 0; }
 
 void spawn(const Arg *arg) {
   struct sigaction sa;
 
   if (fork() == 0) {
-    if (dpy)
-      close(ConnectionNumber(dpy));
+    if (display)
+      close(ConnectionNumber(display));
     setsid();
 
     sigemptyset(&sa.sa_mask);

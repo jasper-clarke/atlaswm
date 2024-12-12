@@ -1,5 +1,5 @@
 #include "atlas.h"
-#include "configurer.h"
+#include "config.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <stdlib.h>
@@ -71,9 +71,9 @@ void updateClientList(void) {
   Client *c;
   Monitor *m;
 
-  XDeleteProperty(dpy, root, netatom[NetClientList]);
+  XDeleteProperty(display, root, netAtoms[NET_CLIENT_LIST]);
   for (m = monitors; m; m = m->next)
     for (c = m->clients; c; c = c->next)
-      XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32,
+      XChangeProperty(display, root, netAtoms[NET_CLIENT_LIST], XA_WINDOW, 32,
                       PropModeAppend, (unsigned char *)&(c->win), 1);
 }

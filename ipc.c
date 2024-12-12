@@ -1,5 +1,5 @@
 #include "ipc.h"
-#include "configurer.h"
+#include "config.h"
 #include "util.h"
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>

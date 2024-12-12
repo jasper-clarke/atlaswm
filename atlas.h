@@ -7,75 +7,30 @@
 /* Forward Declarations */
 typedef struct Monitor Monitor;
 typedef struct Client Client;
-typedef struct Drw Drw;
 
-/* Enumerations */
-// Cursor types
-enum {
-  CurNormal, // Default cursor
-  CurResize, // Cursor when resizing windows
-  CurMove,   // Cursor when moving windows
-  CurLast    // Marker for last cursor type
+// Constants and Enums
+enum CursorType { CURSOR_NORMAL, CURSOR_RESIZE, CURSOR_MOVE, CURSOR_COUNT };
+
+enum NetAtom {
+  NET_SUPPORTED,
+  NET_WM_NAME,
+  NET_WM_STATE,
+  NET_WM_CHECK,
+  NET_WM_FULLSCREEN,
+  NET_ACTIVE_WINDOW,
+  NET_WM_WINDOW_TYPE,
+  NET_WM_WINDOW_TYPE_DIALOG,
+  NET_CLIENT_LIST,
+  NET_DESKTOP_NAMES,
+  NET_DESKTOP_VIEWPORT,
+  NET_NUMBER_OF_DESKTOPS,
+  NET_CURRENT_DESKTOP,
+  NET_ATOM_COUNT
 };
 
-// EWMH (Extended Window Manager Hints) atoms
-enum {
-  NetSupported,
-  NetWMName,
-  NetWMState,
-  NetWMCheck,
-  NetWMFullscreen,
-  NetActiveWindow,
-  NetWMWindowType,
-  NetWMWindowTypeDialog,
-  NetClientList,
-  NetDesktopNames,
-  NetDesktopViewport,
-  NetNumberOfDesktops,
-  NetCurrentDesktop,
-  NetLast
-};
+enum WMAtom { WM_PROTOCOLS, WM_DELETE, WM_STATE, WM_TAKE_FOCUS, WM_ATOM_COUNT };
 
-// Default X11 atoms
-enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };
-
-// Click locations for event handling
-enum {
-  ClkClientWin, // Client window
-  ClkRootWin,   // Root window
-  ClkLast       // Marker for last click type
-};
-
-/* Data Structures */
-// Generic argument union for flexible parameter passing
-typedef union {
-  int i;           // Integer value
-  unsigned int ui; // Unsigned integer value
-  float f;         // Float value
-  const void *v;   // Void pointer for generic data
-} Arg;
-
-// Mouse button configuration
-typedef struct {
-  unsigned int click;           // Click type
-  unsigned int mask;            // Modifier mask
-  unsigned int button;          // Button number
-  void (*func)(const Arg *arg); // Function to call
-  const Arg arg;                // Argument to pass
-} Button;
-
-// Keyboard shortcut configuration
-typedef struct {
-  unsigned int mod;          // Modifier keys
-  KeySym keysym;             // Key symbol
-  void (*func)(const Arg *); // Function to call
-  const Arg arg;             // Argument to pass
-} Key;
-
-// Keybinding configuration
-
-#define MAX_KEYBINDINGS 100
-#define MAX_VALUE_LENGTH 256
+enum ClickTarget { CLICK_CLIENT_WINDOW, CLICK_ROOT_WINDOW, CLICK_COUNT };
 
 typedef enum {
   ACTION_SPAWN,
@@ -93,12 +48,35 @@ typedef enum {
   ACTION_UNKNOWN
 } ActionType;
 
+/* Data Structures */
+typedef union {
+  int i;
+  unsigned int ui;
+  float f;
+  const void *v;
+} Arg;
+
+typedef struct {
+  unsigned int click;
+  unsigned int mask;
+  unsigned int button;
+  void (*func)(const Arg *arg);
+  const Arg arg;
+} Button;
+
+typedef struct {
+  unsigned int mod;          // Modifier keys
+  KeySym keysym;             // Key symbol
+  void (*func)(const Arg *); // Function to call
+  const Arg arg;             // Argument to pass
+} Key;
+
 typedef struct {
   unsigned int modifier;
   KeySym keysym;
   ActionType action;
-  char value[MAX_VALUE_LENGTH];
-  char description[MAX_VALUE_LENGTH];
+  char *value;
+  char *description;
 } Keybinding;
 
 typedef struct {
@@ -124,20 +102,20 @@ typedef struct {
 // Cursor structure
 typedef struct {
   Cursor cursor; // X11 cursor
-} Cur;
+} CursorWrapper;
 
 // Color type definition
 typedef XftColor Clr;
 
 // Drawing context structure
-struct Drw {
+typedef struct {
   unsigned int w, h; // Width and height
   Display *dpy;      // Display connection
   int screen;        // Screen number
   Window root;       // Root window
   Drawable drawable; // Drawing surface
   GC gc;             // Graphics context
-};
+} DrawContext;
 
 // Client (window) structure
 struct Client {
@@ -188,12 +166,12 @@ struct Monitor {
 };
 
 /* Drawing Functions */
-Drw *drw_create(Display *dpy, int screen, Window win, unsigned int w,
-                unsigned int h);
-void drw_free(Drw *drw);
-void drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
-Cur *drw_cur_create(Drw *drw, int shape);
-void drw_cur_free(Drw *drw, Cur *cursor);
+DrawContext *drw_create(Display *dpy, int screen, Window win, unsigned int w,
+                        unsigned int h);
+void drw_free(DrawContext *drw);
+void drw_clr_create(DrawContext *drw, Clr *dest, const char *clrname);
+CursorWrapper *drw_cur_create(DrawContext *drw, int shape);
+void drw_cur_free(DrawContext *drw, CursorWrapper *cursor);
 
 /* Utility Macros */
 #define HEIGHT(X) ((X)->h + 2 * (X)->borderWidth)
@@ -206,7 +184,7 @@ void drw_cur_free(Drw *drw, Cur *cursor);
 #define LENGTH(X) (sizeof(X) / sizeof(X[0]))
 #define BUTTONMASK (ButtonPressMask | ButtonReleaseMask)
 #define CLEANMASK(mask)                                                        \
-  (mask & ~(numlockmask | LockMask) &                                          \
+  (mask & ~(numLockMask | LockMask) &                                          \
    (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask | Mod4Mask |      \
     Mod5Mask))
 #define INTERSECT(x, y, w, h, m)                                               \
@@ -314,20 +292,12 @@ void viewWorkspace(const Arg *arg);
 void zoom(const Arg *arg);
 void pop(Client *c);
 void directWindowToMonitor(const Arg *arg);
-
-// Util
 void free_command_args(char **argv);
 char **parse_command_string(const char *cmd);
 
-// Main Functions
-void checkForOtherWM(void);
-void cleanup(void);
-void run(void);
-void scan(void);
-void setup(void);
-int xerror(Display *dpy, XErrorEvent *ee);
-int xerrordummy(Display *dpy, XErrorEvent *ee);
-int xerrorstart(Display *dpy, XErrorEvent *ee);
+int handleXError(Display *dpy, XErrorEvent *ee);
+int handleXErrorDummy(Display *dpy, XErrorEvent *ee);
+int handleXErrorStart(Display *dpy, XErrorEvent *ee);
 
 void setCurrentDesktop(void);
 void setDesktopNames(void);
@@ -336,18 +306,18 @@ void setViewport(void);
 void updateCurrentDesktop(void);
 
 /* External Variables */
-extern Display *dpy;
+extern Display *display;
 extern Monitor *monitors;
 extern Monitor *selectedMonitor;
-extern Drw *drw;
-extern Cur *cursor[CurLast];
+extern DrawContext *drawContext;
+extern CursorWrapper *cursor[CURSOR_COUNT];
 extern Window root;
-extern Atom wmatom[WMLast], netatom[NetLast];
-extern unsigned int numlockmask;
+extern Atom wmAtoms[WM_ATOM_COUNT], netAtoms[NET_ATOM_COUNT];
+extern unsigned int numLockMask;
 extern int screenWidth, screenHeight;
 extern int screen;
 extern const Layout layouts[];
-extern void (*handler[LASTEvent])(XEvent *);
-extern int running;
+extern void (*eventHandlers[LASTEvent])(XEvent *);
+extern int isWMRunning;
 
 #endif // _ATLASWM_H_
