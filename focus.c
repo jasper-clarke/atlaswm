@@ -41,16 +41,42 @@ void unfocus(Client *c, int setfocus) {
 }
 
 void focusMonitor(const Arg *arg) {
-  Monitor *m;
+    Monitor *m;
 
-  if (!monitors->next)
-    return;
-  if ((m = findMonitorInDirection(arg->i)) == selectedMonitor)
-    return;
-  unfocus(selectedMonitor->active, 0);
-  selectedMonitor = m;
-  focus(NULL);
-  moveCursorToClientCenter(selectedMonitor->active);
+    if (!monitors->next)
+        return;
+    
+    if ((m = findMonitorInDirection(arg->i)) == selectedMonitor)
+        return;
+
+    unfocus(selectedMonitor->active, 0);
+    selectedMonitor = m;
+
+    // Check if there are any visible clients on the monitor
+    Client *c = NULL;
+    for (Client *t = m->clients; t; t = t->next) {
+        if (ISVISIBLE(t)) {
+            c = t;
+            break;
+        }
+    }
+
+    if (c) {
+        // Found a visible client, focus it and move cursor to its center
+        focus(c);
+        moveCursorToClientCenter(c);
+    } else {
+        // No clients, just focus monitor and move cursor to monitor center
+        focus(NULL);
+        
+        // Calculate monitor center coordinates
+        int x = m->mx + (m->mw / 2);
+        int y = m->my + (m->mh / 2);
+        
+        // Move cursor to monitor center
+        XWarpPointer(display, None, root, 0, 0, 0, 0, x, y);
+        XFlush(display);
+    }
 }
 
 void focusstack(const Arg *arg) {

@@ -135,17 +135,51 @@ Monitor *findMonitorFromWindow(Window w) {
 
 Monitor *findMonitorInDirection(int dir) {
   Monitor *m = NULL;
+  Monitor *bestCandidate = NULL;
+  int shortestDistance = INT_MAX;
 
-  if (dir > 0) {
-    if (!(m = selectedMonitor->next))
-      m = monitors;
-  } else if (selectedMonitor == monitors)
-    for (m = monitors; m->next; m = m->next)
-      ;
-  else
-    for (m = monitors; m->next != selectedMonitor; m = m->next)
-      ;
-  return m;
+  if (!selectedMonitor || !monitors->next)
+    return selectedMonitor;
+
+  // Check each monitor
+  for (m = monitors; m; m = m->next) {
+    if (m == selectedMonitor)
+      continue;
+
+    // Check if monitor is in the right direction
+    switch (dir) {
+    case DIR_UP:
+      if (m->my >= selectedMonitor->my)
+        continue;
+      break;
+    case DIR_DOWN:
+      if (m->my <= selectedMonitor->my)
+        continue;
+      break;
+    case DIR_LEFT:
+      if (m->mx >= selectedMonitor->mx)
+        continue;
+      break;
+    case DIR_RIGHT:
+      if (m->mx <= selectedMonitor->mx)
+        continue;
+      break;
+    default:
+      return selectedMonitor;
+    }
+
+    // Calculate Manhattan distance
+    int distance =
+        abs(selectedMonitor->mx - m->mx) + abs(selectedMonitor->my - m->my);
+
+    // Update best candidate if this monitor is closer
+    if (distance < shortestDistance) {
+      shortestDistance = distance;
+      bestCandidate = m;
+    }
+  }
+
+  return bestCandidate ? bestCandidate : selectedMonitor;
 }
 
 Monitor *getMonitorForArea(int x, int y, int w, int h) {

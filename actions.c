@@ -93,31 +93,41 @@ void executeKeybinding(Keybinding *kb) {
       LOG_ERROR("No direction specified for focusmonitor keybinding");
       return;
     }
-    // New empty variable to hold the direction
-    if (strcasecmp(kb->value, "next") == 0) {
-      direction.i = +1;
-    } else if (strcasecmp(kb->value, "prev") == 0) {
-      direction.i = -1;
+
+    if (strcasecmp(kb->value, "up") == 0) {
+      direction.i = DIR_UP;
+    } else if (strcasecmp(kb->value, "down") == 0) {
+      direction.i = DIR_DOWN;
+    } else if (strcasecmp(kb->value, "left") == 0) {
+      direction.i = DIR_LEFT;
+    } else if (strcasecmp(kb->value, "right") == 0) {
+      direction.i = DIR_RIGHT;
     } else {
-      LOG_ERROR("Invalid direction specified for focusmonitor keybinding, ",
+      LOG_ERROR("Invalid direction specified for focusmonitor keybinding: %s",
                 kb->value);
+      return;
     }
     focusMonitor(&direction);
     break;
 
   case ACTION_MOVETOMONITOR:
     if (!kb->value[0]) {
-      LOG_ERROR("No direction specified for focusmonitor keybinding");
+      LOG_ERROR("No direction specified for movetomonitor keybinding");
       return;
     }
-    // New empty variable to hold the direction
-    if (strcasecmp(kb->value, "next") == 0) {
-      direction.i = +1;
-    } else if (strcasecmp(kb->value, "prev") == 0) {
-      direction.i = -1;
+
+    if (strcasecmp(kb->value, "up") == 0) {
+      direction.i = DIR_UP;
+    } else if (strcasecmp(kb->value, "down") == 0) {
+      direction.i = DIR_DOWN;
+    } else if (strcasecmp(kb->value, "left") == 0) {
+      direction.i = DIR_LEFT;
+    } else if (strcasecmp(kb->value, "right") == 0) {
+      direction.i = DIR_RIGHT;
     } else {
-      LOG_ERROR("Invalid direction specified for focusmonitor keybinding, ",
+      LOG_ERROR("Invalid direction specified for movetomonitor keybinding: %s",
                 kb->value);
+      return;
     }
     directWindowToMonitor(&direction);
     break;

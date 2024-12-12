@@ -1,9 +1,9 @@
-startup_progs = ["kitty", "nitrogen --restore", "picom --daemon"]
-log_level = "info"
+startup_progs = ["xrandr --output DP-2 --mode 2560x1440 --rate 144.00 --primary --output DP-0 --mode 1920x1080 --rate 75.00 --right-of DP-2 --rotate left", "nitrogen --restore", "picom --daemon"]
+log_level = "warning"
 workspaces = [
   "web",
   "code",
-  "music"
+  "banana"
 ]
 
 [gaps]
@@ -13,20 +13,24 @@ inner = 20
 [border]
 width = 3
 
-[layout]
-master_factor = 0.5
-
 [keybindings]
-"Super+e" = { action = "spawn", value = "kitty", desc = "Launch Terminal" }
+"Super+e" = { action = "spawn", value = "kitty -o allow_remote_control=yes -o enabled_layouts=tall,stack", desc = "Launch Terminal" }
 "Super+space" = { action = "spawn", value = "rofi -show drun -theme ~/.config/rofi/launcher.rasi", desc = "Launch Applications" }
+
 "Super+q" = { action = "killclient", desc = "Kill current window" }
 "Super+r" = { action = "reload", desc = "Reload configuration" }
 "Super+f" = { action = "togglefloating", desc = "Toggle floating mode" }
-"Super+l" = { action = "focusmonitor", value = "next", desc = "Focus next monitor" }
-"Super+h" = { action = "focusmonitor", value = "prev", desc = "Focus previous monitor" }
-"Super+Shift+l" = { action = "movetomonitor", value = "next", desc = "Move window to next monitor" }
-"Super+Shift+h" = { action = "movetomonitor", value = "prev", desc = "Move window to previous monitor" }
-"Super+1" = { action = "viewworkspace", value = "web", desc = "View web workspace"   }
-"Super+2" = { action = "viewworkspace", value = "code", desc = "View code workspace  " }
-"Super+Shift+1" = { action = "movetoworkspace", value = "web", desc = "View web wor  kspace" }
-"Super+Shift+2" = { action = "movetoworkspace", value = "code", desc = "View code w  orkspace" }
+"Super+Escape" = { action = "cyclefocus", desc = "Cycle focus" }
+
+"Super+l" = { action = "focusmonitor", value = "right", desc = "Focus right monitor" }
+"Super+h" = { action = "focusmonitor", value = "left", desc = "Focus left monitor" }
+"Super+Shift+l" = { action = "movetomonitor", value = "right", desc = "Move window to right monitor" }
+"Super+Shift+h" = { action = "movetomonitor", value = "left", desc = "Move window to left monitor" }
+
+"Super+1" = { action = "viewworkspace", value = "web", desc = "View web workspace" }
+"Super+2" = { action = "viewworkspace", value = "code", desc = "View code workspace" }
+"Super+3" = { action = "viewworkspace", value = "banana", desc = "View banana workspace" }
+
+"Super+Shift+1" = { action = "movetoworkspace", value = "web", desc = "Move window to web workspace" }
+"Super+Shift+2" = { action = "movetoworkspace", value = "code", desc = "Move window to code workspace" }
+"Super+Shift+3" = { action = "movetoworkspace", value = "banana", desc = "Move window to banana workspace" }

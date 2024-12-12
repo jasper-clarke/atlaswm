@@ -48,6 +48,8 @@ typedef enum {
   ACTION_UNKNOWN
 } ActionType;
 
+enum MonitorDirection { DIR_UP = 1, DIR_DOWN = 2, DIR_LEFT = 3, DIR_RIGHT = 4 };
+
 /* Data Structures */
 typedef union {
   int i;
