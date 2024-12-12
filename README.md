@@ -22,7 +22,7 @@ AtlasWM is a dynamic, customizable X11 window manager written in C, designed wit
 
 - Xlib (X11)
 - Xft
-- Xinerama (optional)
+- Xinerama
 
 For Debian/Ubuntu:
 
