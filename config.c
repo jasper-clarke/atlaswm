@@ -31,6 +31,7 @@ static const struct {
                   {"cyclefocus", ACTION_CYCLEFOCUS},
                   {"killclient", ACTION_KILLCLIENT},
                   {"togglefloating", ACTION_TOGGLEFLOATING},
+                  {"togglefullscreen", ACTION_TOGGLEFULLSCREEN},
                   {"focusmonitor", ACTION_FOCUSMONITOR},
                   {"movetomonitor", ACTION_MOVETOMONITOR},
                   {"viewworkspace", ACTION_VIEWWORKSPACE},

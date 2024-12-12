@@ -2,7 +2,6 @@
 #define _CONFIG_MANAGER_H_
 
 #include "atlas.h"
-#include "freetype2/freetype/config/ftstdlib.h"
 
 // Configuration structure
 typedef struct {

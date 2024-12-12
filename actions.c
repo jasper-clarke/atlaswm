@@ -136,6 +136,14 @@ void executeKeybinding(Keybinding *kb) {
     toggleWindowFloating(&arg);
     break;
 
+  case ACTION_TOGGLEFULLSCREEN:
+    if (!selectedMonitor->active) {
+      return;
+    }
+    setWindowFullscreen(selectedMonitor->active,
+                        !selectedMonitor->active->isFullscreen);
+    break;
+
   case ACTION_VIEWWORKSPACE:
     // Convert workspace name to index
     for (size_t i = 0; i < cfg.workspaceCount; i++) {
